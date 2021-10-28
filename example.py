@@ -1,5 +1,7 @@
 """
-TODO: fix SegmentationAnalyzer environment and replace current one
+TODO:
+    1. fix SegmentationAnalyzer environment and replace current one.
+    2. create a jupyter notebook for tutorial
 """
 
 # import metadataWriter
@@ -8,7 +10,6 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor
 from os.path import join
 
-# from aicssegmentation.core.visual import seg_fluo_side_by_sideside_by_side, single_fluorescent_view,segmentation_quick_view
 import numpy as np
 import pandas as pd
 from scipy.ndimage.measurements import label, find_objects
@@ -26,11 +27,11 @@ if __name__ == "__main__":
     treatment_type = experimentalparams.TREATMENT_TYPES
     ###############################################
 
-    folder = '../Results/2021/july23/TOM20segmented/'
+    segmented_ch_folder = '../Results/2021/july23/TOM20segmented/'
 
-    dnafnames = datautils.getFileListContainingString(folder, 'DNA_RPE.tif')
-    actinfnames = datautils.getFileListContainingString(folder, 'Actin_RPE_.tif')
-    GFPfnames = datautils.getFileListContainingString(folder, '_TOM20seg')
+    dnafnames = datautils.getFileListContainingString(segmented_ch_folder, 'DNA_RPE.tif')
+    actinfnames = datautils.getFileListContainingString(segmented_ch_folder, 'Actin_RPE_.tif')
+    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder, '_TOM20seg')
 
     savepath = '../Results/2021/Aug6/GFPproperties/'
 
@@ -57,8 +58,8 @@ if __name__ == "__main__":
             if w < usedweeks:
                 start_ts = datetime.datetime.now()
 
-                IMGGFP_0, IMGactin = stackio.opensegmentedstack(join(folder, GFPfile)), stackio.opensegmentedstack(
-                    join(folder, actinfile), binary=False)
+                IMGGFP_0, IMGactin = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile)), stackio.opensegmentedstack(
+                    join(segmented_ch_folder, actinfile), binary=False)
                 actin_label, icellcounts = label(IMGactin > 0)
                 obj_df = pd.DataFrame(np.arange(1, icellcounts + 1, 1), columns=['object_index'])
                 print('entering loop1')
@@ -126,9 +127,6 @@ if __name__ == "__main__":
     sigma = 2
     strsigma = "95.45"
 
-    '''
-    TODO: create a multiproperty loop if 10+ properties added
-    '''
     orgenelletype = ["Cell", channel, channel]
     propertycategory = [allcellvals, allGFPvals, indGFPvals]
     for otype in orgenelletype:

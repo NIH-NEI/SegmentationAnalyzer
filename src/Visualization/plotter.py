@@ -1,14 +1,13 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.AnalysisTools import datautils, experimentalparams, statcalcs
+from src.AnalysisTools import datautils, experimentalparams, statcalcs, types
 
 plt.rcParams["figure.figsize"] = [12, 9]
 
 
-def generate_plot(data3dlist, propname, units, savesigma=None, savepath="", channel="", withstrpplt=False):
+def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None, savepath: types.PathLike = "", channel="", withstrpplt: bool = False)-> None:
     datadf = datautils.generatedataframe(data3dlist, propname)
-    #     print(datadf)
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))
     sns.violinplot(ax=ax, x="Week", y=propname, hue="Treatment", cut=0, data=datadf, gridsize=100, split=True,
                    scale="count", )
@@ -87,11 +86,11 @@ def generate_plot(data3dlist, propname, units, savesigma=None, savepath="", chan
     # boolean_indexing(l)
 
 
-def violinstripplot(data, organelle="Cell", propname="", unit="", sigma=0, savesigma="", savepath=""):
+def violinstripplot(data, organelle="Cell", propname="", unit="", sigma=0, savesigma="", savepath="") -> None:
     """
-    TODO: check data types
+    TODO: double check data types before finalizing
     :param data:
-    :param organelle:
+    :param organelle: Name of organelle
     :param propname:
     :param unit:
     :param sigma:

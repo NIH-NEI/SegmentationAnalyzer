@@ -10,7 +10,7 @@ TREATMENT_TYPES = ep.TREATMENT_TYPES
 WS = ep.WS
 
 
-def removeoutliers3dlist(alldata, m=2):
+def removeoutliers3dlist(alldata, m: float = 2):
     """
     removes outliers outside of m standard deviations for 3D lists
     :param alldata:
@@ -30,7 +30,7 @@ def removeoutliers3dlist(alldata, m=2):
     return newdata
 
 
-def removeoutliers(data1darray, m=2):
+def removeoutliers(data1darray, m: float = 2):
     """
     removes outliers outside of m standard deviations for 1d arrays
     :param data1darray: 1d array
@@ -41,7 +41,7 @@ def removeoutliers(data1darray, m=2):
     return newdata
 
 
-def perctosd(percentile=95.452):
+def perctosd(percentile: float = 95.452):
     """
     calculate standard deviation based on percent point function
     :param percentile: percentile

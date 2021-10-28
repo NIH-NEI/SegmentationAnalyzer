@@ -4,5 +4,8 @@ import numpy as np
 
 PathLike = Union[str, Path]
 SegmentationLike = Union[str, bool]
-Stacklike = np.ndarray  # ndim = 3?
-ArrayLike = Union[np.ndarray]
+Stacklike = np.ndarray  # TODO: ndim = 3?
+ArrayLike = Union[list, tuple, np.ndarray, set]
+
+# TODO: nestedlistlike ?
+

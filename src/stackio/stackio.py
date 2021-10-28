@@ -1,6 +1,4 @@
-from src.AnalysisTools import types
 import traceback
-
 import numpy as np
 from aicsimageio import AICSImage  # ,#omeTifWriter
 from tifffile import imread
@@ -24,7 +22,7 @@ from src.AnalysisTools import types
 #     return seg
 
 
-def opensegmentedstack(name: types.PathLike, binary: bool = True, whiteonblack: types.SegmentationLike = "default", debug=False):
+def opensegmentedstack(name: types.PathLike, binary: bool = True, whiteonblack: types.SegmentationLike = "default", debug: bool=False):
     """
     TODO: test this
     opens segmented stacks. whiteonblack

@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 
 from src.AnalysisTools import experimentalparams
+from src.AnalysisTools import types
 
 
-def create3dlist(len2=experimentalparams.USEDTREATMENTS, len1=experimentalparams.USEDWEEKS):
+def create3dlist(len2: int = experimentalparams.USEDTREATMENTS, len1: int = experimentalparams.USEDWEEKS):
     """
     Create 3d lists with dimensions len1 and len2
     :param len2: number of lists of lists
@@ -17,7 +18,7 @@ def create3dlist(len2=experimentalparams.USEDTREATMENTS, len1=experimentalparams
     return [[[] for w in range(len1)] for t in range(len2)]
 
 
-def createlistof3dlists(n=7, len2=experimentalparams.USEDTREATMENTS, len1=experimentalparams.USEDWEEKS):
+def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENTS, len1: int = experimentalparams.USEDWEEKS):
     """
 
     :param n: number of lists of lists
@@ -31,21 +32,21 @@ def createlistof3dlists(n=7, len2=experimentalparams.USEDTREATMENTS, len1=experi
     return listof3dlists
 
 
-def checkfinite(vals, verbose=False):
+def checkfinite(vals: types.ArrayLike, debug: bool = False):
     """
     Checks all values contained in input data structures for finite or non finite. If any value is not finite, returns False.
     :param vals: list, tuple, ndarray or set of values (any dimensions)
-    :param verbose: for debugging
+    :param debug: for debugging
     :return: Boolean value True = all values are finite; False = atleast 1 nonfinite encountered
     """
     arefinite = True
     isfinite = True
-    ignoretypes = (list, tuple, np.ndarray, set)
+    ignoretypes = types.ArrayLike
     for val in vals:
         if not isinstance(val, ignoretypes):
             isfinite = np.isfinite(val)
             if not isfinite:
-                if verbose:
+                if debug:
                     print("nonfinite encountered: ", val)
                 return False
         else:
@@ -54,7 +55,7 @@ def checkfinite(vals, verbose=False):
     return arefinite
 
 
-def generatedataframe(stackdata, propertyname="Propertyname"):
+def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     """
     Converts stack based data into a pandas dataframe using multi-indexing.
     :param stackdata: data divided into stacks
@@ -70,7 +71,7 @@ def generatedataframe(stackdata, propertyname="Propertyname"):
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
 
-def generatedataframeind(stackdata, propertyname="Property", useboolean=False):
+def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
     """
     TODO: confirm difference
     :param stackdata:
@@ -88,7 +89,7 @@ def generatedataframeind(stackdata, propertyname="Property", useboolean=False):
     return df
 
 
-def boolean_indexing(listoflists, fillval=np.nan):  #
+def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
     """
 
     :param listoflists: list of list data structure
@@ -104,7 +105,7 @@ def boolean_indexing(listoflists, fillval=np.nan):  #
     return out
 
 
-def getFileListContainingString(folder, s):
+def getFileListContainingString(folder, s) -> list:
     """
     returns a list of filenames in selected folder containing the string s
     :param folder: path to folder
@@ -114,7 +115,7 @@ def getFileListContainingString(folder, s):
     return [f for f in listdir(folder) if isfile(join(folder, f)) if f.__contains__(s)]
 
 
-def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False):
+def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tuple:
     """
     returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is robust to any unintentional shuffling of files.
     :param dnafnames: list of filenames - DNA Channel.
