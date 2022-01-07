@@ -4,13 +4,14 @@ from os.path import isfile, join
 import numpy as np
 import pandas as pd
 
-from src.AnalysisTools import experimentalparams
-from src.AnalysisTools import types
+from src.AnalysisTools import experimentalparams, types
 
 
-def create3dlist(len2: int = experimentalparams.USEDTREATMENTS, len1: int = experimentalparams.USEDWEEKS):
+def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
+                 len1: int = experimentalparams.USEDWEEKS):
     """
     Create 3d lists with dimensions len1 and len2
+
     :param len2: number of lists of lists
     :param len1: size of each list
     :return: list of (lists of size len1)
@@ -18,8 +19,12 @@ def create3dlist(len2: int = experimentalparams.USEDTREATMENTS, len1: int = expe
     return [[[] for w in range(len1)] for t in range(len2)]
 
 
-def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENTS, len1: int = experimentalparams.USEDWEEKS):
+def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENTS,
+                        len1: int = experimentalparams.USEDWEEKS):
     """
+    Creates n 3d lists with dimensions len1 and len2. Useful when there is need for multiple
+    parameters
+
 
     :param n: number of lists of lists
     :param len2: number of lists of lists
@@ -34,13 +39,14 @@ def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENT
 
 def checkfinite(vals: types.ArrayLike, debug: bool = False):
     """
-    Checks all values contained in input data structures for finite or non finite. If any value is not finite, returns False.
+    Checks all values contained in input data structures for finite or non finite. If any value is
+    not finite, returns False.
+
     :param vals: list, tuple, ndarray or set of values (any dimensions)
     :param debug: for debugging
     :return: Boolean value True = all values are finite; False = atleast 1 nonfinite encountered
     """
-    arefinite = True
-    isfinite = True
+    arefinite, isfinite = True, True
     ignoretypes = types.ArrayLike
     for val in vals:
         if not isinstance(val, ignoretypes):
@@ -63,34 +69,39 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     :return: Multiindexed Dataframe
     """
     y = boolean_indexing(stackdata)
-    names = ["Treatment", "Week", "id"]
+    names = ["Treatment", "Week", "ID"]
     labeldata = np.arange(y.shape[-1])
     index = pd.MultiIndex.from_product(
-        [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS], labeldata],
+        [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
+         labeldata],
         names=names)
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
 
 def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
     """
-    TODO: confirm difference
-    :param stackdata:
-    :param propertyname:
+    TODO: confirm for individual data
+    :param stackdata: data divided into stacks
+    :param propertyname: name of property
     :param useboolean:
     :return:
     """
     y = boolean_indexing(stackdata)
-    shape = y.shape
-    labelids = np.arange(shape[-1])
+    labelids = np.arange(y.shape[-1])
     names = ["Treatment", "Week", "ID"]
     # labeldata = np.arange(shape[-1])
-    index = pd.MultiIndex.from_product([experimentalparams.USEDTREATMENTS, experimentalparams.USEDWEEKS, labelids], names=names)
+    index = pd.MultiIndex.from_product(
+        [experimentalparams.USEDTREATMENTS, experimentalparams.USEDWEEKS, labelids],
+        names=names)
     df = pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
     return df
 
 
 def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
     """
+    Generates a boolean indexed array with dimensions based on the maximum datapoints (per week per
+    treatment). This is required to address the issue that there may be different number of
+    datapoints for each category.
 
     :param listoflists: list of list data structure
     :param fillval: fill empty cells with given value
@@ -107,7 +118,8 @@ def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
 
 def getFileListContainingString(folder, s) -> list:
     """
-    returns a list of filenames in selected folder containing the string s
+    returns a list of filenames in selected folder containing the string s.
+
     :param folder: path to folder
     :param s: substring
     :return: list of filenames containing s
@@ -117,7 +129,9 @@ def getFileListContainingString(folder, s) -> list:
 
 def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tuple:
     """
-    returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is robust to any unintentional shuffling of files.
+    returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is
+    robust to any unintentional shuffling of files.
+
     :param dnafnames: list of filenames - DNA Channel.
     :param actinfnames: list of filenames - Actin Channel.
     :param GFPfnames: list of filenames - GFP Channel.

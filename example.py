@@ -18,6 +18,14 @@ from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
 from src.Visualization import plotter
 from src.stackio import stackio
 
+def getusedchannels(filelist):
+    channels = []
+    for file in filelist:
+        channel = file.split("_")[0].split("-")[-1]
+        if channel not in channels:
+            channels.append(channel)
+    return channels
+
 if __name__ == "__main__":
     doindividualcalcs = True
     channel = "TOM20"
@@ -36,8 +44,18 @@ if __name__ == "__main__":
     savepath = '../Results/2021/Aug6/GFPproperties/'
 
     dnafiles, actinfiles, GFPfiles = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames)
-
+    channels = getusedchannels(actinfiles)
+    usedchannels = len(channels)
+    usedstacks = 5
+    totalFs = len(experimentalparams.FIDS)
     assert len(dnafiles) == len(actinfiles) == len(GFPfiles)
+    stackvols = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    stackxspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    stackyspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    stackzspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    stackmiparea = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    # stacktops = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks))
+    # stackbottoms = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks))
 
     cellcentroidhs, cellvolumes, cellzspans, cellxspans, cellyspans, cellmaxferets, cellminferets = datautils.createlistof3dlists(n=7)
     GFPcentroidhs, GFPvolumes, GFPzspans, GFPxspans, GFPyspans, GFPmaxferets, GFPminferets = datautils.createlistof3dlists(n=7)
@@ -53,7 +71,7 @@ if __name__ == "__main__":
         try:
             if i > 20:
                 raise Exception
-            week, rep, w, r, basename = experimentalparams.getwr(dnafile, actinfile, GFPfile)
+            week, rep, w, r, basename = experimentalparams.getwr_3channel(dnafile, actinfile, GFPfile)
             t = experimentalparams.findtreatment(r)
             if w < usedweeks:
                 start_ts = datetime.datetime.now()

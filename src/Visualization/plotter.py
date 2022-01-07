@@ -4,9 +4,21 @@ import seaborn as sns
 from src.AnalysisTools import datautils, experimentalparams, statcalcs, types
 
 plt.rcParams["figure.figsize"] = [12, 9]
+a4_dims = (11.7, 8.27)
 
 
 def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None, savepath: types.PathLike = "", channel="", withstrpplt: bool = False)-> None:
+    """
+
+    :param data3dlist: input data. must be a 3d list - with dimensions treatment, week and ID
+    :param propname: property name
+    :param units: units (string) - e.g. micron
+    :param savesigma: string indicating number of standard deviations
+    :param savepath: path to saving plots
+    :param channel: channel name
+    :param withstrpplt: include strip plot with the violinplot if True
+    :return:
+    """
     datadf = datautils.generatedataframe(data3dlist, propname)
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))
     sns.violinplot(ax=ax, x="Week", y=propname, hue="Treatment", cut=0, data=datadf, gridsize=100, split=True,
@@ -17,13 +29,11 @@ def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None, 
 
     plt.setp(ax, xticks=[y for y in range(experimentalparams.USEDWEEKS)],
              xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
-    #     plt.show()
     plt.savefig(
         f"{savepath}_{channel}_{propname}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_s-' + savesigma if savesigma else ''}.png")
     plt.close()
     plt.clf()
 
-    # a4_dims = (11.7, 8.27)
 
     # def generate_plot(data3dlist, propname, units, savesigma = None):
     #     fig, axs = plt.subplots(nrows=1, ncols=usedtreatments, figsize=(18, 8),sharey=True)
@@ -86,29 +96,44 @@ def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None, 
     # boolean_indexing(l)
 
 
-def violinstripplot(data, organelle="Cell", propname="", unit="", sigma=0, savesigma="", savepath="") -> None:
-    """
-    TODO: double check data types before finalizing
-    :param data:
-    :param organelle: Name of organelle
-    :param propname:
-    :param unit:
-    :param sigma:
-    :param savesigma:
-    :return:
-    """
-    try:
-        tempdata = data.copy()
-        weekly_data_conform = statcalcs.removeoutliers3dlist(tempdata, m=sigma)
-        violinstripplot(inddata, stackdata, channel="Cell", propname=propname, units=f"(in {unit})", savesigma=savesigma, savepath=savepath)
-        # weekly_data_conform, propname=f"{organelle} {propname}", units=, savesigma=savesigma)
-        return 0
-    except Exception as e:
-        print(e)
-        return 1
+# def violinstripplot(data, organelle="Cell", propname="", unit="", sigma=0, savesigma="", savepath="") -> None:
+#     """
+#     TODO: double check data types before finalizing
+#     :param data:
+#     :param organelle: Name of organelle
+#     :param propname:
+#     :param unit:
+#     :param sigma:
+#     :param savesigma:
+#     :return:
+#     """
+#     try:
+#         tempdata = data.copy()
+#         weekly_data_conform = statcalcs.removeoutliers3dlist(tempdata, m=sigma)
+#         inddata = datautils.generatedataframe(weekly_data_conform, propname)
+#
+#         violinstripplotind(inddata, stackdata, channel="Cell", propname=propname, units=f"(in {unit})", savesigma=savesigma, savepath=savepath)
+#         # weekly_data_conform, propname=f"{organelle} {propname}", units=, savesigma=savesigma)
+#         return 0
+#     except Exception as e:
+#         print(e)
+#         return 1
 
 
 def violinstripplot(individualdata, stackdata, channel="Cell", propname="", units="", savesigma=None, method_types=["Individual", "Stackwise"], savepath="", withstrpplt=True):
+    """
+
+    :param individualdata: stackdata with outliers removed.
+    :param stackdata: ndarray, has dimensions (usedtreatments, usedweeks, usedchannels, usedstacks, totalFs)
+    :param channel:
+    :param propname:
+    :param units:
+    :param savesigma:
+    :param method_types:
+    :param savepath:
+    :param withstrpplt:
+    :return:
+    """
     inddatadf = datautils.generatedataframeind(individualdata, propname)
     datadf = datautils.generatedataframe(stackdata, propname)
     data = [inddatadf, datadf]

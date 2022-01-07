@@ -24,7 +24,7 @@ from src.AnalysisTools import types
 
 def opensegmentedstack(name: types.PathLike, binary: bool = True, whiteonblack: types.SegmentationLike = "default", debug: bool=False):
     """
-    TODO: test this
+    TODO: test
     opens segmented stacks. whiteonblack
     :param debug:
     :param name:

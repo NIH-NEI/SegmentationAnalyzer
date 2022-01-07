@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import List, NamedTuple, Optional, Union
+from typing import List, Union
+
 import numpy as np
 
 PathLike = Union[str, Path]
 SegmentationLike = Union[str, bool]
-Stacklike = np.ndarray  # TODO: ndim = 3?
+Stacklike = np.ndarray
 ArrayLike = Union[list, tuple, np.ndarray, set]
-
+strlist = List[str]
 # TODO: nestedlistlike ?
-

@@ -12,6 +12,14 @@ AREASCALE = ep.AREASCALE
 
 
 def getedgeconnectivity(slices, maxz):
+    """
+    Returns tags indicating connectivity of 3d object to top or bottom or both. Such data will be
+    excluded from calculations due to the possibility of it being cut off.
+
+    :param slices: slice object
+    :param maxz: max z based on z dimension of original stack
+    :return: tags indicating connectivity of 3d object to top or bottom or both.
+    """
 
     minz = 0
     if maxz == 0:
@@ -31,6 +39,13 @@ def getedgeconnectivity(slices, maxz):
 
 
 def orientation_3D(bboximage):
+    """
+    Calculates 3D orientation based on PCA with 3 components. Note that this orientation does not
+    measure actual feret length, but is based on the distribution of data.
+
+    :param bboximage:
+    :return:
+    """
     # find all filled points
     X = np.array(np.where(bboximage > 0)).T
     pca = PCA(n_components=3).fit(X)
@@ -43,8 +58,11 @@ def orientation_3D(bboximage):
 
 def calcs_(bboxdata):
     """
+    Does calculations for True voxels within a bounding box provided in input. Using the selected
+    area reduces calculation time required. Calculations are done for spans along X, Y and Z axes.
+    Maximum and minimum feret lengths, centroid coordinates and volume.
 
-    :param bboxdata: 3D data in region of interest
+    :param bboxdata: 3D data in region of interest (bounding box)
     :return:centroid, volume, xspan, yspan, zspan, maxferet, minferet measurements
     """
     testdata = (bboxdata > 0)
@@ -73,7 +91,8 @@ def individualcalcs(bboxdata):
     """
 
     :param bboxdata: 3D data in region of interest
-    :return: centroids, volumes, xspans, yspans, zspans, maxferets, minferets, orientation3D measurements for individual organelles
+    :return: centroids, volumes, xspans, yspans, zspans, maxferets, minferets, orientation3D
+    measurements for individual organelles
     """
     centroids, volumes, xspans, yspans, zspans, maxferets, minferets = [], [], [], [], [], [], []
     organellelabel, organellecounts = label(bboxdata > 0)
