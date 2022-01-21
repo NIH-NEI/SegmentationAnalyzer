@@ -44,7 +44,7 @@ def feret_diam(hull: numpy.ndarray) -> numpy.ndarray:
     along the x-axis (columns) for each 1 degree rotation from 0 to 179.
 
     Args:
-        phull (numpy.ndarray): A 2d array of points to calculate the feret
+        hull (numpy.ndarray): A 2d array of points to calculate the feret
             diameter from
 
     Returns:

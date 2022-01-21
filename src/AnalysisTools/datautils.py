@@ -58,7 +58,23 @@ def checkfinite(vals: types.ArrayLike, debug: bool = False):
         else:
             isfinite = checkfinite(val)
         arefinite = isfinite and arefinite
+    print("CHECK2: ",arefinite)
     return arefinite
+
+
+def checkfinitetemp(vals: types.ArrayLike , debug: bool = False):
+    arefinite, isfinite = True, True
+    for val in vals:
+        # print(val, vals)
+        isfinite = np.isfinite(val)
+        if not isfinite:
+            if debug:
+                print("nonfinite encountered: ", val)
+            return False
+        arefinite = isfinite and arefinite
+    # print("CHECK2: ",arefinite)
+    return arefinite
+
 
 
 def generatedataframe(stackdata, propertyname: str = "Propertyname"):
@@ -68,6 +84,7 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     :param propertyname: name of property
     :return: Multiindexed Dataframe
     """
+    print("gdf: ",stackdata.shape,flush=True)
     y = boolean_indexing(stackdata)
     names = ["Treatment", "Week", "ID"]
     labeldata = np.arange(y.shape[-1])
@@ -77,6 +94,27 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
         names=names)
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
+def generateindexedstack(stackdata, propertyname: str = "Property",usedchannels = "channel", abstraction = 0, basendim = 7):
+    indexedstack = None
+    if not isinstance(usedchannels, list):
+        usedchannels = [usedchannels]
+    # y = boolean_indexing(stackdata)
+    labelids = np.arange(stackdata.shape[-1]) # this may be different for each organelle
+    names = ["Treatment", "Week", "Channel", "Well", "FOV","Cell_ID", "Organelle"] #
+    namevalues = [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
+     usedchannels, experimentalparams.WELLS, experimentalparams.FIELDSOFVIEW,
+     list(np.arange(experimentalparams.MAX_CELLS_PER_STACK)), labelids]
+
+    if abstraction>=1:
+        # abstraction=abstraction+7 - basendim
+        for i in range(abstraction):
+            stackdata = np.mean(stackdata, axis=-1)
+        names = names[:-abstraction]
+        namevalues = namevalues[:-abstraction]
+    index = pd.MultiIndex.from_product(namevalues, names=names)
+    # print("INDEX\n",index)
+    indexedstack =pd.DataFrame({propertyname: stackdata.flatten()}, index=index).reset_index()
+    return indexedstack
 
 def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
     """
@@ -101,7 +139,7 @@ def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
     """
     Generates a boolean indexed array with dimensions based on the maximum datapoints (per week per
     treatment). This is required to address the issue that there may be different number of
-    datapoints for each category.
+    datapoints for each category. This is done on a list of list to convert it to a ndarray. empty values are filled with nans.
 
     :param listoflists: list of list data structure
     :param fillval: fill empty cells with given value
@@ -131,6 +169,7 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
     """
     returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is
     robust to any unintentional shuffling of files.
+    TODO: Finalize indices when segmentation final versions are ready.
 
     :param dnafnames: list of filenames - DNA Channel.
     :param actinfnames: list of filenames - Actin Channel.
@@ -139,22 +178,25 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
     :return: ordered lists of the 3 channels with corresponding filenames at same list index.
     """
     dnafiles, actinfiles, GFPfiles = [], [], []
-    print(len(dnafiles), len(actinfiles), len(actinfiles))
-    print(len(dnafnames), len(actinfnames), len(GFPfnames))
-
+    if debug:
+        print(len(dnafiles), len(actinfiles), len(actinfiles))
+        print(len(dnafnames), len(actinfnames), len(GFPfnames))
+        print(dnafnames)
+        print(actinfnames)
+        print(GFPfnames)
     for df in dnafnames:
         basedname = "_".join(df.split("_")[:-2])
         if debug:
-            print(basedname)
+            print("DNA", basedname)
         for af in actinfnames:
-            baseaname = "_".join(af.split("_")[:-3])
+            baseaname = "_".join(af.split("_")[:-2])
             if debug:
-                print(baseaname)
+                print("ACTIN:", baseaname)
             if basedname == baseaname:
                 for Tf in GFPfnames:
-                    baselname = "_".join(Tf.split("_")[:-1])  # check
+                    baselname = "_".join(Tf.split("_")[:-4])  # check
                     if debug:
-                        print(GFPfnames)
+                        print("GFP:", baselname)
                     if basedname == baselname:
                         #                     print(baselname, basedname, baseaname)
                         dnafiles.append(df)
@@ -165,4 +207,36 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                         baselname = ""
                         break
     print(len(dnafiles), len(actinfiles), len(GFPfiles))
+    assert len(dnafiles) == len(actinfiles) == len(
+        GFPfiles), "Number of Actin, DNA and GFP segmentation stacks do not match"
+
     return dnafiles, actinfiles, GFPfiles
+
+
+def getwr_3channel(df, af, lf, debug = False):
+    """
+    Checks names of files and ensures the files correspond to each other. Returns week and replicate
+    information for calculation purposes.
+
+    :param df: dnafilenames
+    :param af: actinfilenames
+    :param lf: gfp_channel_filenames
+    :return: week id, replicate id, week no. replicate number, common base string
+    """
+    basestringdna = "_".join(df.split("_")[:-2])
+    basestringactin = "_".join(af.split("_")[:-2])
+    basesstringlmp = "_".join(lf.split("_")[:-4])
+    if debug:
+        print(basestringdna, basestringactin, basesstringlmp)
+    assert basestringdna == basestringactin == basesstringlmp , "unequal string lengths"
+    s1, r, fov = basestringdna.split("_")
+    w = s1.split("-")[1]
+    w_ = experimentalparams.WS.index(w)
+    r_ = int(r[1:]) - 2
+    fov_ = int(fov[-1:])-1
+    return w, r, w_, r_, fov, fov_, basestringdna
+
+
+def array_nan_equal(a, b):
+    m = np.isfinite(a) & np.isfinite(b)
+    return np.array_equal(a[m], b[m])

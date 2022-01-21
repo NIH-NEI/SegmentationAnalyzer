@@ -1,23 +1,38 @@
 from src.AnalysisTools import types
 
 USEDTREATMENTS = 2
-USEDWEEKS = 4
+USEDWEEKS = 4  # weeks used for calculations: 1-4
+USEDWELLS = 5
+WELLS = ["well_1", "well_2", "well_3", "well_4", "well_5"] # placeholder names. Use generate repinfo whenever necessary
 TREATMENT_TYPES = ["PGE2", "HPI4"]
-WS = ["W1", "W2", "W3", "W4", "W5", "W6"]
-FIDS = ["F001","F002","F003","F004","F005","F006"]
-
-XSCALE, YSCALE, ZSCALE = 0.21666666666666667, 0.21666666666666667, 0.500
+WS = ["W1", "W2", "W3", "W4", "W5", "W6"]  # Weeks
+FIELDSOFVIEW = ["F001", "F002", "F003", "F004", "F005", "F006"]  # Fields of view
+TOTALFIELDSOFVIEW = len(FIELDSOFVIEW)
+XSCALE, YSCALE, ZSCALE = 0.21666666666666667, 0.21666666666666667, 0.5
 VOLUMESCALE = XSCALE * YSCALE * ZSCALE
 AREASCALE = XSCALE * YSCALE
-T = 1
-C = 4
-Z = 27
-Y = 1078
-X = 1278
-setstackshape = (T, C, Z, X, Y)
+
+MAX_CELLS_PER_STACK = 1000
+MAX_DNA_PER_CELL = 2
+MAX_ORGANELLE_PER_CELL = 50  # TENTATIVE on channel
+
+TIMEPOINTS_PER_STACK = 1
+CHANNELLS_PER_STACK = 4
+Z_FRAMES_PER_STACK = 27
+Y_PIXELS_PER_STACK = 1078
+X_PIXELS_PER_STACK = 1278
+
+T = TIMEPOINTS_PER_STACK
+C = CHANNELLS_PER_STACK
+Z = Z_FRAMES_PER_STACK
+Y = Y_PIXELS_PER_STACK
+X = X_PIXELS_PER_STACK
+
+STACK_DIMENSION_ORDER = "(T, C, Z, X, Y)"
+ORIGINAL_STACK_SHAPE = (T, C, Z, X, Y)
 
 
-def generate_repinfo(_alphabets: types.strlist = ["B", "C", "D", "E", "F", "G"]):
+def generate_repinfo(_alphabets: types.strlist = None):
     """
     Input one of the alphabets based on specific file information
 
@@ -28,7 +43,7 @@ def generate_repinfo(_alphabets: types.strlist = ["B", "C", "D", "E", "F", "G"])
     if _alphabets is None:
         _alphabets = allalphabets
     else:
-        assert (_alphabets in allalphabets, f"Alphabets must be from {allalphabets}")
+        assert _alphabets in allalphabets, f"Alphabets must be from {allalphabets}"
     _repnums = ["02", "03", "04", "05", "06", "07", "08", "09", "10", "11"]
     reps = []
     for a in _alphabets:
@@ -37,128 +52,204 @@ def generate_repinfo(_alphabets: types.strlist = ["B", "C", "D", "E", "F", "G"])
     return reps
 
 
-def getwr_3channel(df, af, lf):  # TODO:test
-    """
-    Checks names of files and ensures the files correspond to each other. Returns week and replicate
-    information for calculation purposes.
-
-    :param df: dnafilenames
-    :param af: actinfilenames
-    :param lf: gfp_channel_filenames
-    :return: week id, replicate id, week no. replicate number, common base string
-    """
-    basestringdna = "_".join(df.split("_")[:-2])
-    basestringactin = "_".join(af.split("_")[:-3])
-    basesstringlmp = "_".join(lf.split("_")[:-1])
-
-    print(basestringdna, basestringactin, basesstringlmp)
-    assert basestringdna == basestringactin == basesstringlmp
-    s1, r, _ = basestringdna.split("_")
-    w = s1.split("-")[1]
-    w_ = WS.index(w)
-    r_ = int(r[1:]) - 2
-    return w, r, w_, r_, basestringdna
-
-
 def findtreatment(r):  # TODO: check with getwr_3channel for inconsistencies
     """
     Returns the type of treatement based on replicate id
     :param r: replicate id ( converted to 0-9 range)
     :return: treatment id
     """
-    assert (r < 10, "error")
-    treatment = None
-    if r < 5:
-        treatment = 0
-    else:
-        treatment = 1
+    assert r < 10, "error"
+    treatment = r // 5
     return treatment
 
 
-def checkcellconditions(cellvals):
+def findweek(filename):
+    all_weeks = []
+    for w in WS:
+        if w in filename:
+            all_weeks.append(w)
+    if len(all_weeks) != 1:
+        print("all_weeks : ", all_weeks)
+        raise Exception
+    return all_weeks[0]
+
+
+def findrep(filename, _alphabets=None):
     """
-    Checks if cell (Actin/outer border enclosed object) meets minimum requirements chosen based on
+    Use given alphabet for
+    :param filename:
+    :param _alphabets:
+    :return:
+    """
+    all_reps = []
+    if _alphabets is None:
+        _alphabets = ["B", "C", "D", "E", "F", "G"]
+        reps = generate_repinfo(_alphabets=_alphabets)
+    else:
+        raise Exception
+    for r in reps:
+        if r in filename:
+            all_reps.append(r)
+    if len(all_reps) != 1:
+        print("all_reps : ", all_reps)
+        raise Exception
+    else:
+        return int(all_reps[0][1:]) - 2
+
+
+#     return all_reps[0]
+
+
+def checkstackconditions(vols, xspans, yspans, zspans, mipareas):
+    stackconditions = True
+    assert (len(vols) == len(xspans) == len(yspans) == len(zspans) == len(mipareas))
+    if len(vols) <= 10:
+        stackconditions = False
+    return stackconditions
+
+
+def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
+    """
+        Checks if cell (Actin/outer border enclosed object) meets minimum requirements chosen based on
     expert knowledge. This can be used to filter bad segmentations of cell data.
 
-    :param cellvals: list of values -> centroid, volume, xspan, yspan, zspan, maximum feret, minimum feret.
+    :param cellvals: list of values -> centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, cell touching top(bool),cell touching bot(bool).
+    :param removecutcells: True by default. Any cells touching top or bot are removed.
+    :param volcutoff: cutoff volume in cu. microns
     :return: True if all conditions are met. False if any is not met (indicating biologically
     impossible segmentation.)
     """
-    [centroid, vol, xspan, yspan, zspan, maxferet, minferet] = cellvals
+    [centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot] = cellvals
     satisfied_conditions = True
     if (zspan < 1) or (xspan < 2) or (yspan < 2):
         satisfied_conditions = False
     if vol >= 100000 or vol <= 50:  # 50 = 2130,in cu micron
         satisfied_conditions = False
-    return satisfied_conditions
 
-
-# TODO: ?
+    cut = 0
+    if (top or bot) and removecutcells:
+        satisfied_conditions = False
+        cut = 1
+    if (zspan <= 1.0) or (xspan <= 1.5) or (yspan <= 1.5) or (minferet <= 1.5):
+        satisfied_conditions = False
+    if vol >= 100000 or vol <= volcutoff:  # 50 = 2130, 10 = 426
+        satisfied_conditions = False
+    # print("CHECK1:", satisfied_conditions, cut)
+    return satisfied_conditions, cut
 
 
 class channel():
-    def __init__(self, key=None):
-        self.allchannelnames = ["DNA", "Actin", "Membrane", "TOM20", "PXN", "SEC61B", "TOM20", "TUBA1B", "LMNB1", "FBL", "ACTB", "DSP", "LAMP1", "TJP1", "MYH10", "ST6GAL1", "LC3B", "CETN2",
-                                "SLC25A17",
-                                "RAB5", "GJA1", "CTNNB1"]
-
+    def __init__(self, inputchannelname=None):
+        self.allchannelnames = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
+                                "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
+                                "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]
         self.organellestructure = {
-            "DNA": "Nucleus",  # check
-            "Actin": "Actin Filaments",
-            "Membrane": "Cell membrane",  # check
-            "TOM20": "Mitochondria",
-            "PXN": "Matrix adhesions",
-            "SEC61B": "Endoplasmic reticulum",
-            "TUBA1B": "Microtubules",
-            "LMNB1": "Nuclear Envelope",
-            "FBL": "Nucleolus",
-            "ACTB": "Actin Filaments",
-            "DSP": "Desmosomes",
-            "LAMP1": "Lysosome",
-            "TJP1": "Tight Junctions",
-            "MYH10": "Actomyosin bundles",
-            "ST6GAL1": "Golgi Apparatus",
-            "LC3B": "Autophagosomes",
-            "CETN2": "Centrioles",
-            "SLC25A17": "Peroxisomes",
-            "RAB5": "Endosomes",
-            "GJA1": "Gap Junctions",
-            "CTNNB1": "Adherens Junctions"
+            "dna": "Nucleus",  # check
+            "actin": "Actin Filaments",
+            "membrane": "Cell membrane",  # check
+            "tom20": "Mitochondria",
+            "pxn": "Matrix adhesions",
+            "sec61b": "Endoplasmic reticulum",
+            "tuba1b": "Microtubules",
+            "lmnb1": "Nuclear Envelope",
+            "fbl": "Nucleolus",
+            "actb": "Actin Filaments",
+            "dsp": "Desmosomes",
+            "lamp1": "Lysosome",
+            "tjp1": "Tight Junctions",
+            "myh10": "Actomyosin bundles",
+            "st6gal1": "Golgi Apparatus",
+            "lc3b": "Autophagosomes",
+            "cetn2": "Centrioles",
+            "slc25a17": "Peroxisomes",
+            "rab5": "Endosomes",
+            "gja1": "Gap Junctions",
+            "ctnnb1": "Adherens Junctions"
         }
-
+        self.rep_alphabet = {
+            "dna": "default",
+            "actin": "default",
+            "membrane": "default",
+            "tom20": "E",
+            "pxn": "F",
+            "sec61b": "G",
+            "tuba1b": "C",
+            "lmnb1": "F",
+            "fbl": "G",
+            "actb": "D",
+            "dsp": "B",
+            "lamp1": "B",
+            "tjp1": "D",
+            "myh10": "F",
+            "st6gal1": "C",
+            "lc3b": "C",
+            "cetn2": "G",
+            "slc25a17": "E",
+            "rab5": "E",
+            "gja1": "G",
+            "ctnnb1": "F"
+        }
         self.channelprotein = {
-            "DNA": "",
-            "Actin": "Beta-actin",
-            "Membrane": "",
-            "TOM20": "Tom20",
-            "PXN": "Paxillin",
-            "SEC61B": "",
-            "TUBA1B": "Alpha Tubulin",
-            "LMNB1": "Lamin B1",
-            "FBL": "Fibrillarin",
-            "ACTB": "Beta-actin",
-            "DSP": "Desmoplakin",
-            "LAMP1": "LAMP-1",
-            "TJP1": "Tight Junction Protein Z-01",
-            "MYH10": "Non-muscle myosin heavy chain IIB",
-            "ST6GAL1": "Sialyltransferase 1",
-            "LC3B": "Autophagy-related protein LC3 B",
-            "CETN2": "Centrin-2",
-            "SLC25A17": "Peroxisomal membrane protein",
-            "RAB5": "Ras-related protein Rab-5A",
-            "GJA1": "Connxin-43",
-            "CTNNB1": "Beta-catenin"
+            "dna": "",
+            "actin": "Beta-actin",
+            "membrane": "",
+            "tom20": "tom20",
+            "pxn": "Paxillin",
+            "sec61b": "",
+            "tuba1b": "Alpha Tubulin",
+            "lmnb1": "Lamin B1",
+            "fbl": "Fibrillarin",
+            "actb": "Beta-actin",
+            "dsp": "Desmoplakin",
+            "lamp1": "LAMP-1",
+            "tjp1": "Tight Junction Protein Z-01",
+            "myh10": "Non-muscle myosin heavy chain IIB",
+            "st6gal1": "Sialyltransferase 1",
+            "lc3b": "Autophagy-related protein LC3 B",
+            "cetn2": "Centrin-2",
+            "slc25a17": "Peroxisomal membrane protein",
+            "rab5": "Ras-related protein Rab-5A",
+            "gja1": "Connxin-43",
+            "ctnnb1": "Beta-catenin"
         }
-        if self.validchannelname(key):
-            self.channelname = key
-            self.channelprotein = self.getproteinname(key)
-            self.organellestructurename = self.getorganellestructurename(key)
+        if self.validchannelname(inputchannelname):
+            self.channelname = inputchannelname
+            self.channelprotein = self.getproteinname(inputchannelname)
+            self.organellestructurename = self.getorganellestructurename(inputchannelname)
+            self.repalphabet = self.getrepalphabet(inputchannelname)
         else:
-            raise Exception(f"Invalid Channel name:{key}. Name must be one of {self.allchannelnames}")
-
+            raise Exception(
+                f"Invalid Channel name:{inputchannelname}. Name must be one of {self.allchannelnames}")
+        self.minarea = {
+            "dna": 4,
+            "actin": 4,
+            "membrane": 4,
+            "tom20": 4,
+            "pxn": 4,
+            "sec61b": 4,
+            "tuba1b": 4,
+            "lmnb1": 4,
+            "fbl": 4,
+            "actb": 4,
+            "dsp": 4,
+            "lamp1": 4,
+            "tjp1": 4,
+            "myh10": 4,
+            "st6gal1": 4,
+            "lc3b": 4,
+            "cetn2": 4,
+            "slc25a17": 4,
+            "rab5": 4,
+            "gja1": 4,
+            "ctnnb1": 4
+        }
+        self.directory = None
 
     def getallallchannelnames(self):
         return self.allchannelnames
+
+    def getminarea(self, key):
+        return self.minarea[key]
 
     def getproteinname(self, key):
         return self.channelprotein[key]
@@ -167,4 +258,36 @@ class channel():
         return self.organellestructure[key]
 
     def validchannelname(self, key):
-        return key in self.allchannelnames
+        return key.lower() in self.allchannelnames
+
+    def getrepalphabet(self, key):
+        return self.rep_alphabet[key]
+
+    def setdirectoryname(self, channel, dname):
+        """
+        Use to set directory name in case it is different from channelname
+        :param channel:
+        :param dname:
+        :return:
+        """
+        self.directory = {
+            "lmnb1": "LaminB",
+            "lamp1": "LAMP1",
+            "sec61b": "Sec61",
+            "st6gal1": "ST6GAL1",
+            "tom20": "TOM20",
+            "fbl": "FBL",
+            "myh10": "myosin",
+            "rab5": "RAB5",
+            "tuba1b": "TUBA",
+            "dsp": "DSP",
+            "slc25a17": "SLC",
+            "pxn": "PXN",
+            "gja1": "GJA1",
+            "ctnnb1": "CTNNB",
+            "actb": "ACTB",
+            "cetn2": "CETN2",
+            "lc3b": "LC3B"}
+
+        assert isinstance(dname, str)
+        self.directory[channel] = dname

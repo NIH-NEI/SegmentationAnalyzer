@@ -1,10 +1,3 @@
-"""
-TODO:
-    1. fix SegmentationAnalyzer environment and replace current one.
-    2. create a jupyter notebook for tutorial
-"""
-
-# import metadataWriter
 import datetime
 import traceback
 from concurrent.futures import ProcessPoolExecutor
@@ -18,6 +11,9 @@ from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
 from src.Visualization import plotter
 from src.stackio import stackio
 
+
+# import src.stackio.metadataHandler
+
 def getusedchannels(filelist):
     channels = []
     for file in filelist:
@@ -25,6 +21,7 @@ def getusedchannels(filelist):
         if channel not in channels:
             channels.append(channel)
     return channels
+
 
 if __name__ == "__main__":
     doindividualcalcs = True
@@ -43,23 +40,52 @@ if __name__ == "__main__":
 
     savepath = '../Results/2021/Aug6/GFPproperties/'
 
-    dnafiles, actinfiles, GFPfiles = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames)
+    dnafiles, actinfiles, GFPfiles = datautils.orderfilesbybasenames(dnafnames, actinfnames,
+                                                                     GFPfnames)
     channels = getusedchannels(actinfiles)
     usedchannels = len(channels)
-    usedstacks = 5
-    totalFs = len(experimentalparams.FIDS)
+    totalFs = experimentalparams.TOTALFIELDSOFVIEW
+    usedwells = experimentalparams.USEDWELLS  # well numbers divided by treatment
+    maxnocells = experimentalparams.MAX_CELLS_PER_STACK
+    maxdnapercell = experimentalparams.MAX_DNA_PER_CELL
+    maxorganellepercell = experimentalparams.MAX_ORGANELLE_PER_CELL
+
     assert len(dnafiles) == len(actinfiles) == len(GFPfiles)
-    stackvols = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
-    stackxspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
-    stackyspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
-    stackzspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
-    stackmiparea = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks, totalFs))
+    ''' 
+    json format: {'id': '0_0', 'parent': 'P1-W1-LAMP1_B02_F001_DNA_RPE.tif', 'xspan': 9, 'yspan': 37, 'zspan': 5,
+     'volume': 798, 'edgetag': 'b', 'mip_area': 262, 'centroid': [4, 3, 20]}
+
+
+    '''
+    badfiles = []
+    cellstackvols = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells))
+    cellstackxspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells))
+    cellstackyspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells))
+    cellstackzspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells))
+    cellstackmiparea = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells))
+
+    dnastackvols = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxdnapercell))
+    dnastackxspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxdnapercell))
+    dnastackyspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxdnapercell))
+    dnastackzspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxdnapercell))
+    dnastackmiparea = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxdnapercell))
+
+    gfpstackvols = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+    gfpstackxspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+    gfpstackyspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+    gfpstackzspan = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+    gfpstackmiparea = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+
+
+
     # stacktops = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks))
     # stackbottoms = np.nan * np.ones((usedtreatments, usedweeks, usedchannels, usedstacks))
-
-    cellcentroidhs, cellvolumes, cellzspans, cellxspans, cellyspans, cellmaxferets, cellminferets = datautils.createlistof3dlists(n=7)
-    GFPcentroidhs, GFPvolumes, GFPzspans, GFPxspans, GFPyspans, GFPmaxferets, GFPminferets = datautils.createlistof3dlists(n=7)
-    indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets, indGFPorients = datautils.createlistof3dlists(n=8)
+    cellcentroidhs, cellvolumes, cellzspans, cellxspans, cellyspans, cellmaxferets, cellminferets = datautils.createlistof3dlists(
+        n=7)
+    GFPcentroidhs, GFPvolumes, GFPzspans, GFPxspans, GFPyspans, GFPmaxferets, GFPminferets = datautils.createlistof3dlists(
+        n=7)
+    indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets, indGFPorients = datautils.createlistof3dlists(
+        n=8)
     percvolumes = datautils.create3dlist(usedtreatments, usedweeks)
 
     # NJS
@@ -69,15 +95,19 @@ if __name__ == "__main__":
 
     for i, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
         try:
-            if i > 20:
-                raise Exception
-            week, rep, w, r, basename = experimentalparams.getwr_3channel(dnafile, actinfile, GFPfile)
+            # if i > 20:
+            #     raise Exception
+            week, rep, w, r, basename = experimentalparams.getwr_3channel(dnafile, actinfile,
+                                                                          GFPfile)
             t = experimentalparams.findtreatment(r)
             if w < usedweeks:
                 start_ts = datetime.datetime.now()
+                ##GET IMAGES
+                IMGGFP_0 = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile))
+                IMGactin = stackio.opensegmentedstack(join(segmented_ch_folder, actinfile)) # binary=False
+                IMGDNA = stackio.opensegmentedstack(join(segmented_ch_folder, dnafile)) # binary=False
 
-                IMGGFP_0, IMGactin = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile)), stackio.opensegmentedstack(
-                    join(segmented_ch_folder, actinfile), binary=False)
+
                 actin_label, icellcounts = label(IMGactin > 0)
                 obj_df = pd.DataFrame(np.arange(1, icellcounts + 1, 1), columns=['object_index'])
                 print('entering loop1')
@@ -91,31 +121,42 @@ if __name__ == "__main__":
                     IMGGFP_obj = (IMGGFP_0 & objs)
                     # print(np.unique(IMGGFP_obj), np.count_nonzero(IMGGFP_obj))
                     edgetags = ShapeMetrics.getedgeconnectivity(slices, objs.shape[0])
-                    centroid, volume, xspan, yspan, zspan, maxferet, minferet = ShapeMetrics.calcs_(objs[slices])
-                    cellvals = [centroid, volume, xspan, yspan, zspan, maxferet, minferet]
+                    centroid, volume, xspan, yspan, zspan, maxferet, minferet = ShapeMetrics.calcs_(
+                        objs[slices])
+                    cellvals = [centroid, volume, xspan, yspan, zspan, maxferet, minferet, top, bot]
                     # print(experimentalparams.checkcellconditions(cellvals))
                     print(datautils.checkfinite(cellvals))
 
                     # print('done calc1', flush=True)
-                    if experimentalparams.checkcellconditions(cellvals) and datautils.checkfinite(cellvals):
-                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet = ShapeMetrics.calcs_(IMGGFP_obj[slices])
-                        GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet = 0, 0, 0, 0, 0, 0, 0
-                        GFPvals = [GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet]
+                    if experimentalparams.checkcellconditions(cellvals) and datautils.checkfinite(
+                            cellvals):
+                        GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet = ShapeMetrics.calcs_(
+                            IMGGFP_obj[slices])
+                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet = 0, 0, 0, 0, 0, 0, 0
+                        GFPvals = [GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan,
+                                   GFPmaxferet, GFPminferet]
                         # print('done calc2', flush=True)
                         if datautils.checkfinite(GFPvals):
                             cellcentroidhs[t][w].append(centroid), cellvolumes[t][w].append(volume)
-                            cellxspans[t][w].append(xspan), cellyspans[t][w].append(yspan), cellzspans[t][w].append(zspan)
-                            cellmaxferets[t][w].append(maxferet), cellminferets[t][w].append(minferet)
+                            cellxspans[t][w].append(xspan), cellyspans[t][w].append(yspan), \
+                            cellzspans[t][w].append(zspan)
+                            cellmaxferets[t][w].append(maxferet), cellminferets[t][w].append(
+                                minferet)
 
-                            GFPcentroidhs[t][w].append(GFPcentroid), GFPvolumes[t][w].append(GFPvolume)
-                            GFPxspans[t][w].append(GFPxspan), GFPyspans[t][w].append(GFPyspan), GFPzspans[t][w].append(GFPzspan)
-                            GFPmaxferets[t][w].append(GFPmaxferet), GFPminferets[t][w].append(GFPminferet)
+                            GFPcentroidhs[t][w].append(GFPcentroid), GFPvolumes[t][w].append(
+                                GFPvolume)
+                            GFPxspans[t][w].append(GFPxspan), GFPyspans[t][w].append(GFPyspan), \
+                            GFPzspans[t][w].append(GFPzspan)
+                            GFPmaxferets[t][w].append(GFPmaxferet), GFPminferets[t][w].append(
+                                GFPminferet)
 
                             percvolumes[t][w].append(GFPvolume / volume)
                             print('entering processes')
                             # NJS
                             if doindividualcalcs:
-                                processes.append((t, w, executor.submit(ShapeMetrics.individualcalcs, IMGGFP_obj[slices])))
+                                processes.append((t, w,
+                                                  executor.submit(ShapeMetrics.individualcalcs,
+                                                                  IMGGFP_obj[slices])))
                                 #
                                 # t, w, process = processes[-1]
                                 # features = process.result()
@@ -126,10 +167,13 @@ if __name__ == "__main__":
                     print('in processes')
                     features = process.result()
                     indcentroid, indvolume, indxspan, indyspan, indzspan, indmaxferet, indminferet, indorient = features
-                    indGFPcentroidhs[t][w].extend(indcentroid), indGFPvolumes[t][w].extend(indvolume)
-                    indGFPxspans[t][w].extend(indxspan), indGFPyspans[t][w].extend(indyspan), indGFPzspans[t][w].extend(
+                    indGFPcentroidhs[t][w].extend(indcentroid), indGFPvolumes[t][w].extend(
+                        indvolume)
+                    indGFPxspans[t][w].extend(indxspan), indGFPyspans[t][w].extend(indyspan), \
+                    indGFPzspans[t][w].extend(
                         indzspan)
-                    indGFPmaxferets[t][w].extend(indmaxferet), indGFPminferets[t][w].extend(indminferet)
+                    indGFPmaxferets[t][w].extend(indmaxferet), indGFPminferets[t][w].extend(
+                        indminferet)
                     indGFPorients[t][w].extend(indorient)
                 end_ts = datetime.datetime.now()
 
@@ -147,10 +191,17 @@ if __name__ == "__main__":
 
     orgenelletype = ["Cell", channel, channel]
     propertycategory = [allcellvals, allGFPvals, indGFPvals]
+
+    generateplots, savedata = True, True
     for otype in orgenelletype:
         for propertytype in propertycategory:
             for i, prop in enumerate(propertytype):
-                plotter.violinstripplot(data=prop, channel=otype, propname=propnames[i], unit=unittype[i], sigma=sigma, savesigma=strsigma)
+                if generateplots:
+                    plotter.violinstripplot(stackdata=prop, channel=otype, propname=propnames[i],
+                                            units=unittype[i], savesigma=True,
+                                            selected_method_type=["Stackwise"])
+                if savedata:
+                    stackio.saveproperty(data=prop, channel=otype, unit=unittype, propname=propnames[i], savesigma=strsigma)
 
     # tempcellvol = cellvolumes.copy()
     # weeklycellvols_conform = statcalcs.removeoutliers3dlist(tempcellvol, m=sigma)
