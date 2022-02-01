@@ -14,7 +14,7 @@ AREASCALE = XSCALE * YSCALE
 
 MAX_CELLS_PER_STACK = 1000
 MAX_DNA_PER_CELL = 2
-MAX_ORGANELLE_PER_CELL = 50  # TENTATIVE on channel
+MAX_ORGANELLE_PER_CELL = 100  # TENTATIVE on channel
 
 TIMEPOINTS_PER_STACK = 1
 CHANNELLS_PER_STACK = 4
@@ -99,8 +99,27 @@ def findrep(filename, _alphabets=None):
 
 #     return all_reps[0]
 
+def getusedchannels(filelist):
+    channels = []
+    for file in filelist:
+        channel = file.split("_")[0].split("-")[-1]
+        if channel not in channels:
+            channels.append(channel)
+    return channels
+
+
 
 def checkstackconditions(vols, xspans, yspans, zspans, mipareas):
+    """
+    TODO: finalize
+    Only choose stacks with 10 or more datapoints in them - this will help reduce bias from stacks with too few cells
+    :param vols:
+    :param xspans:
+    :param yspans:
+    :param zspans:
+    :param mipareas:
+    :return:
+    """
     stackconditions = True
     assert (len(vols) == len(xspans) == len(yspans) == len(zspans) == len(mipareas))
     if len(vols) <= 10:

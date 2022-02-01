@@ -58,23 +58,22 @@ def checkfinite(vals: types.ArrayLike, debug: bool = False):
         else:
             isfinite = checkfinite(val)
         arefinite = isfinite and arefinite
-    print("CHECK2: ",arefinite)
+    print("CHECK2: ", arefinite)
     return arefinite
 
 
-def checkfinitetemp(vals: types.ArrayLike , debug: bool = False):
+def checkfinitetemp(vals: types.ArrayLike, debug: bool = False):
     arefinite, isfinite = True, True
-    for val in vals:
-        # print(val, vals)
-        isfinite = np.isfinite(val)
-        if not isfinite:
-            if debug:
-                print("nonfinite encountered: ", val)
-            return False
-        arefinite = isfinite and arefinite
-    # print("CHECK2: ",arefinite)
+    # for val in vals:
+    #     # print(val, vals)
+    #     isfinite = np.isfinite(val)
+    #     if not isfinite:
+    #         if debug:
+    #             print("nonfinite encountered: ", val)
+    #         return False
+    #     arefinite = isfinite and arefinite
+    # # print("CHECK2: ",arefinite)
     return arefinite
-
 
 
 def generatedataframe(stackdata, propertyname: str = "Propertyname"):
@@ -84,7 +83,7 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     :param propertyname: name of property
     :return: Multiindexed Dataframe
     """
-    print("gdf: ",stackdata.shape,flush=True)
+    print("gdf: ", stackdata.shape, flush=True)
     y = boolean_indexing(stackdata)
     names = ["Treatment", "Week", "ID"]
     labeldata = np.arange(y.shape[-1])
@@ -94,27 +93,31 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
         names=names)
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
-def generateindexedstack(stackdata, propertyname: str = "Property",usedchannels = "channel", abstraction = 0, basendim = 7):
-    indexedstack = None
+
+def generateindexedstack(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel", basendim=7):
+    stackdims = stackdata.ndim
+    abstraction = basendim - stackdims
     if not isinstance(usedchannels, list):
         usedchannels = [usedchannels]
     # y = boolean_indexing(stackdata)
-    labelids = np.arange(stackdata.shape[-1]) # this may be different for each organelle
-    names = ["Treatment", "Week", "Channel", "Well", "FOV","Cell_ID", "Organelle"] #
-    namevalues = [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
-     usedchannels, experimentalparams.WELLS, experimentalparams.FIELDSOFVIEW,
-     list(np.arange(experimentalparams.MAX_CELLS_PER_STACK)), labelids]
+    labelids = np.arange(stackdata.shape[-1])  # this may be different for each organelle
 
-    if abstraction>=1:
+    names = ["Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle"]  #
+    namevalues = [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
+                  usedchannels, experimentalparams.WELLS, experimentalparams.FIELDSOFVIEW,
+                  list(np.arange(experimentalparams.MAX_CELLS_PER_STACK)), labelids]
+
+    if abstraction:
         # abstraction=abstraction+7 - basendim
-        for i in range(abstraction):
-            stackdata = np.mean(stackdata, axis=-1)
+        # for i in range(abstraction):
+        #     stackdata = np.mean(stackdata, axis=-1)
         names = names[:-abstraction]
         namevalues = namevalues[:-abstraction]
     index = pd.MultiIndex.from_product(namevalues, names=names)
     # print("INDEX\n",index)
-    indexedstack =pd.DataFrame({propertyname: stackdata.flatten()}, index=index).reset_index()
+    indexedstack = pd.DataFrame({propertyname: stackdata.flatten()}, index=index).reset_index()
     return indexedstack
+
 
 def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
     """
@@ -133,6 +136,16 @@ def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: 
         names=names)
     df = pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
     return df
+
+
+def expandToNdim(stackdata: np.ndarray, setdims: int = 7, mindims: int = 4, maxdims: int = 7) -> np.ndarray:
+    dims = stackdata.ndim
+    print(dims)
+    if dims < setdims:
+        for i in range(setdims - dims):
+            stackdata = np.expand_dims(stackdata, axis=-1)
+    assert (stackdata.ndim == setdims)
+    return stackdata
 
 
 def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
@@ -198,7 +211,6 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                     if debug:
                         print("GFP:", baselname)
                     if basedname == baselname:
-                        #                     print(baselname, basedname, baseaname)
                         dnafiles.append(df)
                         actinfiles.append(af)
                         GFPfiles.append(Tf)
@@ -206,14 +218,16 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                         basedname = ""
                         baselname = ""
                         break
-    print(len(dnafiles), len(actinfiles), len(GFPfiles))
-    assert len(dnafiles) == len(actinfiles) == len(
-        GFPfiles), "Number of Actin, DNA and GFP segmentation stacks do not match"
 
-    return dnafiles, actinfiles, GFPfiles
+    no_dnafiles = len(dnafiles)
+    no_actinfiles = len(actinfiles)
+    no_gfpfiles = len(GFPfiles)
+    print(no_dnafiles, no_actinfiles, no_gfpfiles)
+    assert no_dnafiles == no_actinfiles == no_gfpfiles, "Number of Actin, DNA and GFP segmentation stacks do not match"
+    return dnafiles, actinfiles, GFPfiles, no_dnafiles
 
 
-def getwr_3channel(df, af, lf, debug = False):
+def getwr_3channel(df, af, lf, debug=False):
     """
     Checks names of files and ensures the files correspond to each other. Returns week and replicate
     information for calculation purposes.
@@ -228,12 +242,12 @@ def getwr_3channel(df, af, lf, debug = False):
     basesstringlmp = "_".join(lf.split("_")[:-4])
     if debug:
         print(basestringdna, basestringactin, basesstringlmp)
-    assert basestringdna == basestringactin == basesstringlmp , "unequal string lengths"
+    assert basestringdna == basestringactin == basesstringlmp, "unequal string lengths"
     s1, r, fov = basestringdna.split("_")
     w = s1.split("-")[1]
     w_ = experimentalparams.WS.index(w)
     r_ = int(r[1:]) - 2
-    fov_ = int(fov[-1:])-1
+    fov_ = int(fov[-1:]) - 1
     return w, r, w_, r_, fov, fov_, basestringdna
 
 

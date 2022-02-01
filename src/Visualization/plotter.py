@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
+import seaborn as sns
+
 from src.AnalysisTools import datautils, experimentalparams, types
 from src.AnalysisTools import statcalcs
+
 plt.rcParams["figure.figsize"] = [12, 9]
 a4_dims = (11.7, 8.27)
 
@@ -124,92 +126,99 @@ def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None,
 def violinstripplot(stackdata, channel="Cell", propname="", units="",
                     savesigma=None, selected_method_type=None,
                     treatment_types=experimentalparams.TREATMENT_TYPES, savepath="",
-                    withstrpplt=True, scaletype="count"):
-    """
-    scaletype can be count, width or area
+                    withstrpplt=True, scaletype="count", uselog=False):
+       """
+           scaletype can be count, width or area
 
-    # :param individualdata: stackdata with outliers removed.
-    :param stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
-    :param channel:
-    :param propname:
-    :param units:
-    :param savesigma:
-    :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
-    :param treatment_types:
-    :param savepath:
-    :param withstrpplt:
-    :return:
-    """
-    method_types = ["Individual",  "Stackwise","Platewise"]
-    useall = False
-    if selected_method_type == None:
-        useall = True
-    else:
-        assert selected_method_type in method_types
-    basendim = 7
-    if stackdata.ndim == 6:
-        basendim = 6
-        stackdata = np.expand_dims(stackdata,axis=-1)
-    assert (stackdata.ndim == 7)
+           # :param individualdata: stackdata with outliers removed.
+           :param stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+           :param channel:
+           :param propname:
+           :param units:
+           :param savesigma:
+           :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
+           :param treatment_types:
+           :param savepath:
+           :param withstrpplt:
+           :return:
+           """
+       method_types = ["Individual", "Stackwise", "Platewise"]
+       useall = False
+       if selected_method_type == None:
+           useall = True
+       else:
+           assert selected_method_type in method_types
+       # basendim = None
+       # if channel == "Cell":
+       #     basendim = 6
+       # else:
+       #     basendim = 7
+       # stackdata_rmoutlier = statcalcs.removestackoutliers(stackdata)
 
-    # inddatadf = datautils.generatedataframeind(individualdata, propname)
-    # stackdatadf = datautils.generatedataframe(stackdata, propname)
-    # stackdata_rmoutlier = statcalcs.removestackoutliers(stackdata)
-    stackdata_rmoutlier = stackdata
-    print(len(np.unique(stackdata)), len(np.unique(stackdata_rmoutlier)))
+       print(np.count_nonzero(~np.isnan(stackdata)))
+       stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=2, abstraction=0)
+       stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=2, abstraction=1)
+       stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=2, abstraction=2)
+       print(np.count_nonzero(~np.isnan(stackdata)), np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv)),
+             np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack)), np.count_nonzero(~np.isnan(stackdata_rmoutlier_well)))
 
-    # index_indiv = statcalcs.removestackoutliers(stackdata,m=2)
-    # index_stack= statcalcs.removestackoutliers(index_stack0,m=2)
-    # index_well= statcalcs.removestackoutliers(index_well0,m=2)
-    index_indiv = datautils.generateindexedstack(stackdata_rmoutlier, propname, abstraction=0, basendim=basendim)
-    index_stack = datautils.generateindexedstack(stackdata_rmoutlier, propname, abstraction=1, basendim=basendim)
-    index_well = datautils.generateindexedstack(stackdata_rmoutlier, propname, abstraction=2, basendim=basendim)
+       # print("after stat ", stackdata_rmoutlier_indiv.shape, stackdata_rmoutlier_stack.shape,
+       #       stackdata_rmoutlier_well.shape)
 
-    # index_indiv = index_indiv[~np.isnan(index_indiv)]  # Remove the NaNs
-    # index_stack = index_stack[~np.isnan(index_stack)]  # Remove the NaNs
-    # index_well = index_well[~np.isnan(index_well)]  # Remove the NaNs
+       index_indiv = datautils.generateindexedstack(stackdata_rmoutlier_indiv, propname)
+       index_stack = datautils.generateindexedstack(stackdata_rmoutlier_stack, propname)
+       index_well = datautils.generateindexedstack(stackdata_rmoutlier_well, propname)
+       # print("Before expand ", index_indiv.shape, index_stack.shape, index_well.shape)
 
-    # platedf = datautils.generatedataframe(stackdata)
-    data = [index_indiv,  index_stack, index_well]
-    # alphas = [0.01, 0.5, 1]
-    alphas = [1, 1, 1]
-    for m, method in enumerate(method_types):
-        print(m, method, selected_method_type, useall)
-        if (selected_method_type == method) or useall:
-            print(f"Plotting {method}")
-            fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))#, sharey=True)
-            # for t, treatment in enumerate(treatment_types):
+       # index_indiv = datautils.expandToNdim(index_indiv, setdims=basendim)
+       # index_stack = datautils.expandToNdim(index_stack, setdims=basendim)
+       # index_well = datautils.expandToNdim(index_well, setdims=basendim)
+       # print("After expand ", index_indiv.shape, index_stack.shape, index_well.shape)
 
-            vp = sns.violinplot(ax=axs, x="Week", y=propname, hue="Treatment", cut=0,
-                                data=data[m], inner=None, gridsize=100, palette="turbo",
-                                split=True, scale=scaletype, zorder=0, ) #  dropna=True, width=violinwidths[t], inner="box"
-            sns.stripplot(ax=axs, x="Week", y=propname, hue="Treatment", jitter=0.2,
-                          alpha=alphas[m], data=data[m], dodge=True, edgecolor='black',
-                          zorder=1)
-            sns.boxplot(ax=axs, x="Week", y=propname, data=data[m], width=.8,
-                        boxprops={'facecolor': 'None', "zorder": 10},
-                        whiskerprops={"zorder": 10},
-                        hue="Treatment", showfliers=False, dodge=True)
-            handles, labels = vp.get_legend_handles_labels()
-            axs.legend(handles[:0], labels[:0])
-            axs.set_title(f"{channel} {method}", fontsize=24)
+       # platedf = datautils.generatedataframe(stackdata)
+       data = [index_indiv, index_stack, index_well]
+       alphas = [0.25, 0.75, 1]
+       violinwidths = [0.8, 0.8, 0.8]
+       boxwidths = [0.8, 0.8, 0.8]
+       for m, method in enumerate(method_types):
 
-            l = plt.legend(handles[0:2], labels[0:2], bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+           print(m, method, selected_method_type, useall)
+           # continue
+           if (selected_method_type == method) or useall:
+               print(f"Plotting {method}")
+               fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))  # , sharey=True)
+               # for t, treatment in enumerate(treatment_types):
+               # inner = box for single boxplot
+               vp = sns.violinplot(ax=axs, x="Week", y=propname, hue="Treatment", cut=0, data=data[m], inner=None,
+                                   gridsize=100, palette="turbo", split=True, scale=scaletype,
+                                   zorder=0, width=violinwidths[m])
+               sns.stripplot(ax=axs, x="Week", y=propname, hue="Treatment", jitter=0.2, alpha=alphas[m], data=data[m],
+                             dodge=True, edgecolor='black', zorder=1)
+               sns.boxplot(ax=axs, x="Week", y=propname, data=data[m], width=boxwidths[m],
+                           boxprops={'facecolor': 'None', "zorder": 10},
+                           whiskerprops={"zorder": 10}, hue="Treatment", showfliers=False, dodge=1.1)
+               handles, labels = vp.get_legend_handles_labels()
+               axs.legend(handles[:0], labels[:0])
+               axs.set_title(f"{channel}  {propname} ({method})", fontsize=24)
 
-            # for ax in axs:
-            axs.yaxis.grid(True)
-            axs.set_xlabel('Weeks', fontsize=18)
-            axs.set_ylabel(f"{channel} {propname}(in {units})", fontsize=18)
-            #     ax.set_xlabel('weeks',fontsize = 22)
-            #     ax.set_ylabel(f"{propname}{units}",fontsize = 18)
+               l = plt.legend(handles[0:2], labels[0:2], bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-            plt.setp(axs, xticks=[y for y in range(experimentalparams.USEDWEEKS)],
-                     xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
-            # plt.show()
-            plt.savefig(
-                f"{savepath}_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
-            plt.close()
-            plt.clf()
+               # for ax in axs:
+               axs.yaxis.grid(True)
+               axs.set_xlabel('Weeks', fontsize=18)
+               if uselog:
+                   plt.yscale("log")
+               axs.set_ylabel(f"{channel} {propname}(in {units})", fontsize=18)
+               #     ax.set_xlabel('weeks',fontsize = 22)
+               #     ax.set_ylabel(f"{propname}{units}",fontsize = 18)
+
+               plt.setp(axs, xticks=[y for y in range(experimentalparams.USEDWEEKS)],
+                        xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
+               # plt.show()
+               plt.savefig(
+                   f"{savepath}_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
+               plt.close()
+               plt.clf()
 
 
 if __name__ == "__main__":
@@ -220,7 +229,7 @@ if __name__ == "__main__":
     teststack = np.random.random((2, 4, 1, 5, 6, 1000)) * 100
     print(teststack.shape, teststack.ndim)
     if teststack.ndim == 6:
-        teststack = np.expand_dims(teststack,axis=-1)
+        teststack = np.expand_dims(teststack, axis=-1)
 
     print(teststack.shape, teststack.ndim)
     # violinstripplot(stackdata=teststack, channel="testchannel", propname="testproperty", units="units", savesigma=True,

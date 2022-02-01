@@ -5,11 +5,10 @@ import pandas as pd
 from imea import measure_2d
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from sklearn.decomposition import PCA
-import os
-import sys
+
 from src.AnalysisTools import conv_hull
 from src.AnalysisTools import experimentalparams as ep
-from src.AnalysisTools.datautils import checkfinite, checkfinitetemp
+from src.AnalysisTools.datautils import checkfinitetemp
 
 XSCALE, YSCALE, ZSCALE = ep.XSCALE, ep.YSCALE, ep.ZSCALE
 VOLUMESCALE = ep.VOLUMESCALE
@@ -55,16 +54,22 @@ def orientation_3D(bboximage):
     :return:
     """
     # find all filled points
-    X = np.nan * np.ones(np.where(bboximage > 0)).T
-    pca = PCA(n_components=3).fit(X)
-    a, b, g = pca.components_[0]
-    anglex = np.arctan2(a, b)
-    angley = np.arctan2(b, g)
-    anglez = np.arctan2(g, a)
+    Xpoints = np.array(np.where(bboximage > 0)).T
+    anglex, angley, anglez = np.nan, np.nan, np.nan
+    if Xpoints.shape < (3,3):
+        pass
+    else:
+        # X = np.nan*np.ones_like(Xpoints)
+        # X = np.nan * np.ones().T
+        pca = PCA(n_components=3).fit(Xpoints)
+        a, b, g = pca.components_[0]
+        anglex = np.arctan2(a, b)
+        angley = np.arctan2(b, g)
+        anglez = np.arctan2(g, a)
     return [anglex, angley, anglez]
 
 
-def calcs_(bboxdata, usephull=False, debug = False):
+def calcs_(bboxdata, usephull=False, debug=False):
     """
     Does calculations for True voxels within a bounding box provided in input. Using the selected
     area reduces calculation time required. Calculations are done for spans along X, Y and Z axes.
@@ -106,6 +111,7 @@ def calcs_(bboxdata, usephull=False, debug = False):
         except Exception as e:
             print(e)
     else:
+        # print("VOLUME", volume, volume > 0, volume > 0. )
         volume = np.nan
     return centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea
 
@@ -117,17 +123,18 @@ def individualcalcs(bboxdata):
     :return: centroids, volumes, xspans, yspans, zspans, maxferets, minferets, orientation3D
     measurements for individual organelles
     """
-    from src.AnalysisTools import experimentalparams
     # centroids, volumes, xspans, yspans, zspans, maxferets, minferets, orientations3D = [], [], [], [], [], [], [], []
-    mno = experimentalparams.MAX_ORGANELLE_PER_CELL
-    centroids, volumes, xspans, yspans, zspans, maxferets, minferets, mipareas = np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
+    mno = ep.MAX_ORGANELLE_PER_CELL
+    centerz = ep.Z_FRAMES_PER_STACK//2+1
+
+    volumes, xspans, yspans, zspans, maxferets, minferets, mipareas = np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
+    z_distributions = np.zeros(centerz*2)
     organellelabel, organellecounts = label(bboxdata > 0)
     org_df = pd.DataFrame(np.arange(1, organellecounts + 1, 1), columns=['organelle_index'])
 
     # distributioncalcs
-    z_distributions, radial_distribution2ds, radial_distribution3ds, orientations = [], [], [], []
+    radial_distribution2ds, radial_distribution3ds = [], []
+    centroids, orientations3D = np.nan * np.ones((mno,3)), np.nan * np.ones((mno, 3))
     cellcentroid = center_of_mass(bboxdata)
 
     for index, row in org_df.iterrows():
@@ -137,32 +144,36 @@ def individualcalcs(bboxdata):
             bboxcrop = find_objects(orgs)
             slices = bboxcrop[0]
             centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea = calcs_(bboxdata[slices])
-            orgvals = [ volume, xspan, yspan, zspan, maxferet, minferet, miparea]
             # distributioncalcs TODO
-            # z_distribution = cellcentroid[0] - centroid[0]
+            # z_dist = cellcentroid[0] - centroid[0]
             # radial_distribution2d = np.sqrt((cellcentroid[1] - centroid[1]) ** 2 + (cellcentroid[2] - centroid[2]) ** 2)
-            # radial_distribution3d = np.cbrt((cellcentroid[0] - centroid[0]) ** 2 + (cellcentroid[1] - centroid[1]) ** 2 + (
-            #         cellcentroid[2] - centroid[2]) ** 2)
+            # radial_distribution3d = np.cbrt(
+            #     (cellcentroid[0] - centroid[0]) ** 2 + (cellcentroid[1] - centroid[1]) ** 2 + (
+            #                 cellcentroid[2] - centroid[2]) ** 2)
             # orientation3D = orientation_3D(bboxdata)
             #         orientations - PCA?
-            if checkfinitetemp(orgvals):
-                # centroids.append(centroid)
-                # volumes.append(volume)
-                # xspans.append(xspan)
-                # yspans.append(yspan)
-                # zspans.append(zspan)
-                # maxferets.append(maxferet)
-                # minferets.append(minferet)
+            # orgvals = [volume, xspan, yspan, zspan, maxferet, minferet, miparea]
+            # if checkfinitetemp(orgvals):
+            centroids[index, :] = np.array(centroid)
+            volumes[index] = volume
+            xspans[index] = xspan
+            yspans[index] = yspan
+            zspans[index] = zspan
+            maxferets[index] = maxferet
+            minferets[index] = minferet
+            mipareas[index] = miparea
+                # z_distributions[round(centerz+z_dist)]+=1
+                # radial_distribution2ds.append(radial_distribution2d)
+                # radial_distribution3ds.append(radial_distribution3d)
+                # orientations3D[index,:] = np.array(orientation3D)
+            # z_distributions = np.asarray(z_distributions)
+            # radial_distribution2ds = np.asarray(radial_distribution2ds)
+            # radial_distribution3ds = np.asarray(radial_distribution3ds)
+            # print(orientations3D.shape)
+            # print("EXITING TEST")
+            # exit()
 
-                # centroids[index]=centroid
-                volumes[index] = volume
-                xspans[index] = xspan
-                yspans[index] = yspan
-                zspans[index] = zspan
-                maxferets[index] = maxferet
-                minferets[index] = minferet
-                mipareas[index] = miparea
-                # orientations3D.append(orientation3D)
         else:
             print(f"more than {mno} organelles found: {organellecounts}")
-    return centroids, volumes, xspans, yspans, zspans, maxferets, minferets, mipareas  # , orientations3D
+
+    return centroids, volumes, xspans, yspans, zspans, maxferets, minferets, mipareas#, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds

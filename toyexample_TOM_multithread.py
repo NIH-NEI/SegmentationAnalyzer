@@ -24,14 +24,14 @@ if __name__ == "__main__":
     ###############################################
 
     # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-    # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
 
-    segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-    savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/testset_fixednan/'
+    segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
+    # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
+    # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
+    # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
+    savepath = '../Results/2022/Feb4/TOM/all/'
     assert exists(segmented_ch_folder)
     assert exists(savepath)
-    # segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
-    # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
 
     dnafnames = datautils.getFileListContainingString(segmented_ch_folder, 'DNA_RPE.tif')
     actinfnames = datautils.getFileListContainingString(segmented_ch_folder, 'Actin_RPE.tif')
@@ -103,15 +103,15 @@ if __name__ == "__main__":
     freq = binvals.copy()
 
     for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
-        # if stackid != 0:  # Test only 1 dataset
-        #     continue
+        processes = []
         try:
+            start_ts = datetime.datetime.now()
+
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = experimentalparams.findtreatment(r)
-            print(
-                f"Week:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
+            print(f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
             if w < usedweeks:
-                start_ts = datetime.datetime.now()
+
                 ##GET IMAGES
                 img_GFP = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile))
                 img_ACTIN = stackio.opensegmentedstack(join(segmented_ch_folder, actinfile))  # binary=False
@@ -163,7 +163,7 @@ if __name__ == "__main__":
                             # slices = bboxcrop[0]
                             percent_coverage_actin = selected_actin_overlap_volume / combined_actins_volume_overlap
                             percent_actin_matrix[i - 1, j - 1] = percent_coverage_actin
-                            if percent_coverage_actin >= 0.75:  ##0.75% or more of dna lies in one actin
+                            if percent_coverage_actin >= 0.75:  ##75% or more of dna lies in one actin
                                 over75list_actin[j - 1] = i
                                 dna_actin_membership[i - 1, j - 1] = 1
                 bincount = np.bincount(np.sum(dna_actin_membership, axis=1), minlength=minlength)
@@ -192,8 +192,7 @@ if __name__ == "__main__":
                     if experimentalparams.checkcellconditions(cellvals) and datautils.checkfinitetemp(cellvals[1:8]):
                         ##DNA members
                         savethisimage = False
-                        memberdnas = np.where(dna_actin_membership[obj_index - 1, :])[
-                            0]  # -1 since this matrix uses indices from 0
+                        memberdnas = np.where(dna_actin_membership[obj_index - 1, :])[0]  # -1 since this matrix uses indices from 0
                         no_members = memberdnas.shape[0]
                         selected_dna_members = np.zeros_like(labelactin[slices])
                         actin_channel = 255 * ((labelactin == index) > 0)
@@ -227,6 +226,7 @@ if __name__ == "__main__":
                                 assert (dnaobj.shape == labeldna[slices].shape == labelactin[slices].shape)
                                 centroid, dnavol, dnax, dnay, dnaz, dnamaxf, dnaminf, dnamip = ShapeMetrics.calcs_(
                                     dnaobj)
+                                # centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = dnavol
                                 dnastackxspan[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = dnax
                                 dnastackyspan[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = dnay
@@ -236,34 +236,16 @@ if __name__ == "__main__":
                                 dnastackminferet[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = dnaminf
                         # GFP members
                         IMGGFP_obj = (img_GFP & objs)[slices]
-
                         # print("IMGGFP_obj:: ", IMGGFP_obj.shape)
 
-                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip = ShapeMetrics.calcs_(
-                        #     IMGGFP_obj[slices])
+                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip = ShapeMetrics.calcs_(IMGGFP_obj[slices])
                         # GFPvals = [GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip]
                         # print("GFPvals:: ", GFPvals)
                         # if datautils.checkfinitetemp(GFPvals):
                         if doindividualcalcs:
-                            # print("doing individual calcs", )
-                            indcentroid, indvolume, indxspan, indyspan, indzspan, indmaxferet, indminferet, indmiparea = ShapeMetrics.individualcalcs(IMGGFP_obj)
-                            # print(indvolume)
-                            # print(gfpstackvols[t, w, 0, r % 5, fovno, obj_index, :].shape, indvolume.shape)
-                            gfpstackvols[t, w, 0, r % 5, fovno, obj_index, :] = indvolume
-                            gfpstackxspan[t, w, 0, r % 5, fovno, obj_index, :] = indxspan
-                            gfpstackyspan[t, w, 0, r % 5, fovno, obj_index, :] = indyspan
-                            gfpstackzspan[t, w, 0, r % 5, fovno, obj_index, :] = indzspan
-                            gfpstackmiparea[t, w, 0, r % 5, fovno, obj_index, :] = indmiparea
-                            gfpstackmaxferet[t, w, 0, r % 5, fovno, obj_index, :] = indmaxferet
-                            gfpstackminferet[t, w, 0, r % 5, fovno, obj_index, :] = indminferet
-                    # print("TOMS", np.count_nonzero(~np.isnan(gfpstackvols)))
-
-                end_ts = datetime.datetime.now()
-                print(f"{basename} done in {str(end_ts - start_ts)}")
-            # for t, w, r, fovno, obj_id, process in processes:
-            #     print('in processes')
-            #     features = process.result()
-            #     # indcentroid, indvolume, indxspan, indyspan, indzspan, indmaxferet, indminferet, indmiparea, indorient3D, z_dist, radial_dist2d, radial_dist3d = features
+                            # print("doing individual calcs")
+                            processes.append((t, w, r, fovno, obj_index, executor.submit(ShapeMetrics.individualcalcs, IMGGFP_obj)))
+                print("Processes = ", len(processes))
 
                 # print(indorient3D.shape)
                 # gfpstackindorientations[t, w, 0, r % 5, fovno, obj_id, :, 3] = indorient3D.T
@@ -271,10 +253,26 @@ if __name__ == "__main__":
                 # gfpstackraddist2d[t, w, 0, r % 5, fovno, obj_id, :] = radial_dist2d
                 # gfpstackraddist3d[t, w, 0, r % 5, fovno, obj_id, :] = radial_dist3d
                 #############
-
+            for it, iw, ir, ifovno, obj_id, process in processes:
+                # print('in processes')
+                features = process.result()
+                # indcentroid, indvolume, indxspan, indyspan, indzspan, indmaxferet, indminferet, indmiparea, indorient3D, z_dist, radial_dist2d, radial_dist3d = features
+                indcentroid, indvolume, indxspan, indyspan, indzspan, indmaxferet, indminferet, indmiparea = features
+                gfpstackvols[it,iw, 0, ir % 5, ifovno, obj_id, :] = indvolume
+                gfpstackxspan[it, iw, 0, ir % 5, fovno, obj_id, :] = indxspan
+                gfpstackyspan[it, iw, 0, ir % 5, fovno, obj_id, :] = indyspan
+                gfpstackzspan[it, iw, 0, ir % 5, fovno, obj_id, :] = indzspan
+                gfpstackmiparea[it, iw, 0, ir % 5, fovno, obj_id, :] = indmiparea
+                gfpstackmaxferet[it, iw, 0, ir % 5, fovno, obj_id, :] = indmaxferet
+                gfpstackminferet[it, iw, 0, ir % 5, fovno, obj_id, :] = indminferet
+            end_ts = datetime.datetime.now()
+            print("TOMvolvalues : ", np.count_nonzero(~np.isnan(gfpstackvols)))
 
         except Exception as e:
-            print("Exception: ", e, traceback.format_exc(), memberdna_no)
+            print("Exception: ", e, traceback.format_exc(),"TOMvolvalues", np.count_nonzero(~np.isnan(gfpstackvols)))
+
+
+        print(f"{basename} done in {str(end_ts - start_ts)}")
 
     allCELLvals = [cellstackvols, cellstackxspan, cellstackyspan, cellstackzspan, cellstackmiparea, cellstackmaxferet,
                    cellstackminferet]
@@ -282,10 +280,6 @@ if __name__ == "__main__":
                   dnastackminferet]
     allGFPvals = [gfpstackvols, gfpstackxspan, gfpstackyspan, gfpstackzspan, gfpstackmiparea, gfpstackmaxferet,
                   gfpstackminferet]#, gfpstackindorientations, gfpstackzdistr, gfpstackraddist2d, gfpstackraddist3d]
-
-    # allCELLvalnames = ["cellstackvols", "cellstackxspan", "cellstackyspan", "cellstackzspan", "cellstackmiparea","cellstackmaxferet","cellstackminferet"]
-    # allDNAvalnames = ["dnastackvols", "dnastackxspan", "dnastackyspan", "dnastackzspan", "dnastackmiparea", "dnastackmaxferet", "dnastackminferet"]
-    # allGFPvalnames = ["gfpstackvols", "gfpstackxspan", "gfpstackyspan", "gfpstackzspan", "gfpstackmiparea", "gfpstackmaxferet", "gfpstackminferet"]
 
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     propnames = ["volume", "xspan", "yspan", "zspan", "miparea", "max feret", "min feret"]
@@ -303,14 +297,14 @@ if __name__ == "__main__":
     for o, (propertytype, otype) in enumerate(zip(propertycategory, orgenelletype)):
         for i, prop in enumerate(propertytype):
             if savedata:
-                filename = f"{otype}_{propnames[i]}_{strsigma}.npz"
+                filename = f"{channel}_{otype}_{propnames[i]}_{strsigma}.npz"
                 fpath = join(savepath, filename)
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
                 loaded = stackio.loadproperty(fpath)
 
                 success = datautils.array_nan_equal(loaded[loaded.files[0]], prop)
                 if success:
-                    print(f"SAVE SUCCESSFUL FOR {filename}")
+                    print(f"SAVE SUCCESSFUL FOR {filename}\t\tNo. of Datapoints: {np.count_nonzero(~np.isnan(prop))}")
                 else:  # (2, 4, 1, 5, 6, 1000, 50)
                     print(loaded.files, loaded[loaded.files[0]].shape, prop.shape)
             try:

@@ -4,7 +4,8 @@ import traceback
 
 import numpy as np
 import pandas as pd
-from aicsimageio import AICSImage  # ,#omeTifWriter
+from aicsimageio import AICSImage
+from aicsimageio.writers import OmeTiffWriter
 from tifffile import imread
 
 from src.AnalysisTools import types
@@ -81,6 +82,7 @@ def saveproperty(stack, filepath=None, type="pickle"):
     success = False
     try:
         if type == "npz":
+            # filepath = filepath + ".npz"
             np.savez(filepath, stack)
         elif type == "pickle":
             f = open(f"{filepath}.pkl", "wb")

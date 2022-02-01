@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 from scipy.stats import norm
 
@@ -73,49 +71,61 @@ def perctosd(percentile: float = 95.452):
     return z_crit
 
 
-def removestackoutliers(stackdata, m: float = 2):
+def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 2, fixeddims=6):
     """
     expected dimensions of stackdata: ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
     :param stackdata:
     :param m:
     :return:
     """
-    dims =stackdata.ndim
-    if 3< dims<8:
-        if dims!=7:
-            for i in range(7-dims):
-                stackdata = np.expand_dims(stackdata,axis=-1)
+    dims = stackdata.ndim
+    axes = (0, 1, 2, 3, 4, 5, 6)[:dims]# to account for cell vs organelle dimensions
+    # exit()
+    if abstraction:
+        abstraction = abstraction + dims - fixeddims  # to account for cell vs organelle dimensions
+        stackdata = np.nanmean(stackdata, axis=axes[dims-abstraction:dims])
+        # print("Abstraction axes", axes[dims - abstraction:dims], stackdata.shape, dims, abstraction)
+    nstackdata = stackdata.copy()
 
-    assert (stackdata.ndim ==7)
-
-    # [t, w, 0, r, fovno, obj_index,:]
-    # if plottype.lower() == "stackwise":
     s = stackdata.shape
-    nstackdata = np.nan * np.ones_like(stackdata)
-    for t, wk, ch, wl,f, id in itertools.product(range(s[0]), range(s[1]), range(s[2]), range(s[3]), range(s[4]), range(s[5])):
-        selectedarray = nstackdata[t, wk, ch, wl, :, :, :]
-        mean = np.mean(selectedarray)
-        stdev = np.std(selectedarray)
-        condition = np.abs(selectedarray - mean) < m * stdev
-        nooutlierarray = selectedarray.copy()
-        nooutlierarray[~condition] = np.nan
+    for treatment in range(s[0]):
+        for week in range(s[1]):
+            selectedarray = stackdata[treatment, week].copy()
+            stdev = np.nanstd(selectedarray)
+            mean = np.nanmean(selectedarray)
+            condition = np.abs(selectedarray - mean) < m * stdev
+
+            # nooutlierarray = selectedarray.copy()
+            selectedarray[~condition] = np.nan
+            nstackdata[treatment, week] = selectedarray
+            # print(mean, mean1, stdev, stdev1, np.count_nonzero(selectedarray[~np.isnan(selectedarray)]))
+            # print(treatment, week, nstackdata.shape, nstackdata[treatment, week].shape, selectedarray.shape)
+    #
+    # if 3 < dims < 8:
+    #     if dims != 7:
+    #         for i in range(7 - dims):
+    #             stackdata = np.expand_dims(stackdata, axis=-1)
+    #
+    # assert (stackdata.ndim == 7)
+
     return nstackdata
+
 
 # def reportoutliervalues(vol):
 #     if vol > 10000:
 #         print(vol, ">10k")
 
-if __name__=="__main__":
-    n1, n2, n3, n4, n5 = 5, 6, 1, 12,234
-    exshape = (n1,n2,n3, n4, n5)
-    selectedarray = np.random.random(n1*n2*n3*n4*n5).reshape(exshape)
+if __name__ == "__main__":
+    n1, n2, n3, n4, n5 = 5, 6, 1, 12, 234
+    exshape = (n1, n2, n3, n4, n5)
+    selectedarray = np.random.random(n1 * n2 * n3 * n4 * n5).reshape(exshape)
     mean = np.mean(selectedarray)
     stdev = np.std(selectedarray)
     # nonoutliers = np.any(abs(selectedarray.flatten() - np.mean(selectedarray.flatten())) < 2 * np.std(selectedarray.flatten()))
 
-    condition = np.abs(selectedarray -mean)<1*stdev
+    condition = np.abs(selectedarray - mean) < 1 * stdev
     newarray = selectedarray.copy()
-    newarray[~condition] =np.nan
+    newarray[~condition] = np.nan
     print(condition.shape, mean, stdev, np.min(selectedarray), np.max(selectedarray))
     print(False in condition)
     print(selectedarray[condition].shape, selectedarray[~condition].shape)
