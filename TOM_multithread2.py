@@ -13,7 +13,7 @@ from skimage.measure import label as skilbl
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
 from src.Visualization import plotter
 from src.stackio import stackio
-
+# backup 2/2/22
 if __name__ == "__main__":
     doindividualcalcs = True
     channel = "TOM20"
@@ -24,14 +24,16 @@ if __name__ == "__main__":
     ###############################################
 
     # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-    # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
+
+    # segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
+    # savepath = '../Results/2022/Feb4/TOM/all/'
 
     segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-    savepath = '../Results/2022/Jan28/TOM/testset_final/'
+    # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
+    # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
+    savepath = '../Results/2022/Feb4/TOM/newpropstest/'
     assert exists(segmented_ch_folder)
     assert exists(savepath)
-    # segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
-    # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
 
     dnafnames = datautils.getFileListContainingString(segmented_ch_folder, 'DNA_RPE.tif')
     actinfnames = datautils.getFileListContainingString(segmented_ch_folder, 'Actin_RPE.tif')
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     freq = binvals.copy()
 
     for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
-        # processes = [] # THIS CODE FOR TESTING WITHOUT THIS LINE
+        processes = []
         try:
             start_ts = datetime.datetime.now()
 
@@ -185,7 +187,7 @@ if __name__ == "__main__":
                     # print("calculating actin object")
                     edgetags, top, bot = ShapeMetrics.getedgeconnectivity(slices, objs.shape[0])
 
-                    centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea = ShapeMetrics.calcs_(
+                    centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea = ShapeMetrics.calculate_object_properties(
                         objs[slices])
                     # print("calculated actin object")
                     cellvals = [centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot]
@@ -224,7 +226,7 @@ if __name__ == "__main__":
                                                                        overwrite_file=True)
                                     writer.save(out)
                                 assert (dnaobj.shape == labeldna[slices].shape == labelactin[slices].shape)
-                                centroid, dnavol, dnax, dnay, dnaz, dnamaxf, dnaminf, dnamip = ShapeMetrics.calcs_(
+                                centroid, dnavol, dnax, dnay, dnaz, dnamaxf, dnaminf, dnamip = ShapeMetrics.calculate_object_properties(
                                     dnaobj)
                                 # centroid, volume, xspan, yspan, zspan, maxferet, minferet, miparea
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = dnavol
@@ -238,13 +240,13 @@ if __name__ == "__main__":
                         IMGGFP_obj = (img_GFP & objs)[slices]
                         # print("IMGGFP_obj:: ", IMGGFP_obj.shape)
 
-                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip = ShapeMetrics.calcs_(IMGGFP_obj[slices])
+                        # GFPcentroid, GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip = ShapeMetrics.calculate_object_properties(IMGGFP_obj[slices])
                         # GFPvals = [GFPvolume, GFPxspan, GFPyspan, GFPzspan, GFPmaxferet, GFPminferet, GFPmip]
                         # print("GFPvals:: ", GFPvals)
                         # if datautils.checkfinitetemp(GFPvals):
                         if doindividualcalcs:
                             # print("doing individual calcs")
-                            processes.append((t, w, r, fovno, obj_index, executor.submit(ShapeMetrics.individualcalcs, IMGGFP_obj[slices])))
+                            processes.append((t, w, r, fovno, obj_index, executor.submit(ShapeMetrics.individualcalcs, IMGGFP_obj)))
                 print("Processes = ", len(processes))
 
                 # print(indorient3D.shape)
@@ -297,7 +299,7 @@ if __name__ == "__main__":
     for o, (propertytype, otype) in enumerate(zip(propertycategory, orgenelletype)):
         for i, prop in enumerate(propertytype):
             if savedata:
-                filename = f"{otype}_{propnames[i]}_{strsigma}.npz"
+                filename = f"{channel}_{otype}_{propnames[i]}_{strsigma}.npz"
                 fpath = join(savepath, filename)
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
                 loaded = stackio.loadproperty(fpath)

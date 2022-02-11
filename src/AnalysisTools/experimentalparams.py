@@ -31,6 +31,25 @@ X = X_PIXELS_PER_STACK
 STACK_DIMENSION_ORDER = "(T, C, Z, X, Y)"
 ORIGINAL_STACK_SHAPE = (T, C, Z, X, Y)
 
+def getunits(propertyname):
+    units = {"Centroid": "microns",
+            "Volume":"cu. microns",
+            "X span": "microns",
+            "Y span": "microns",
+            "Z span": "microns",
+            "MIP area":"sq. microns",
+            "Max feret": "microns",
+            "Min feret": "microns",
+            "2D Aspect ratio": None,
+            "Volume fraction": "percent",
+            "Count per cell": None,
+            "Orientation": None,
+            "z-distribution": "microns",
+            "radial distribution 2D": "microns",
+            "radial distribution 3D": "microns"
+    }
+    print("PROPERTYNAME:", propertyname, "UNITS:", propertyname in units.keys())
+    return units[propertyname]
 
 def generate_repinfo(_alphabets: types.strlist = None):
     """
@@ -58,7 +77,7 @@ def findtreatment(r):  # TODO: check with getwr_3channel for inconsistencies
     :param r: replicate id ( converted to 0-9 range)
     :return: treatment id
     """
-    assert r < 10, "error"
+    assert r < 10, "r must be in range 0-9"
     treatment = r // 5
     return treatment
 
@@ -139,12 +158,8 @@ def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
     impossible segmentation.)
     """
     [centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot] = cellvals
+    # print(centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot)
     satisfied_conditions = True
-    if (zspan < 1) or (xspan < 2) or (yspan < 2):
-        satisfied_conditions = False
-    if vol >= 100000 or vol <= 50:  # 50 = 2130,in cu micron
-        satisfied_conditions = False
-
     cut = 0
     if (top or bot) and removecutcells:
         satisfied_conditions = False
@@ -153,12 +168,13 @@ def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
         satisfied_conditions = False
     if vol >= 100000 or vol <= volcutoff:  # 50 = 2130, 10 = 426
         satisfied_conditions = False
-    # print("CHECK1:", satisfied_conditions, cut)
+    # print("CHECK:", satisfied_conditions, cut, top, bot)
     return satisfied_conditions, cut
 
 
 class channel():
     def __init__(self, inputchannelname=None):
+        #TODO: refactor to static
         self.allchannelnames = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
                                 "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
                                 "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]

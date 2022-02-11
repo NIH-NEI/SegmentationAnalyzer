@@ -12,7 +12,7 @@ from skimage.measure import label as skilbl
 
 # from src.stackio import metadataHandler as meta
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
-from src.Visualization import plotter ,cellstack
+from src.Visualization import plotter
 from src.stackio import stackio
 
 if __name__ == "__main__":
@@ -33,13 +33,13 @@ if __name__ == "__main__":
 
     # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
 
-    # segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
+    segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
     # savepath = '../Results/2022/Feb4/TOM/all/'
 
-    segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
+    # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
     # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
     # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
-    savepath = '../Results/2022/Feb11/TOM/results_test2/'
+    savepath = '../Results/2022/Feb11/TOM/results_all/'
     savepathmeta = join(savepath, "meta")
     assert exists(segmented_ch_folder)
     assert exists(savepath)
@@ -103,7 +103,6 @@ if __name__ == "__main__":
     gfpstackvolfrac = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
     gfpstackzdistr = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
     gfpstackraddist2d = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
-    gfpstackraddist2dmean = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
     gfpstackraddist3d = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
 
     num_processes = 4
@@ -200,7 +199,7 @@ if __name__ == "__main__":
                     edgetags, top, bot = ShapeMetrics.getedgeconnectivity(slices, objs.shape[0])
                     CellObject = objs[slices]
                     cellproperties = ShapeMetrics.calculate_object_properties(CellObject)
-                    Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cmeanferet, Cminferet, Cmiparea = cellproperties
+                    Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cminferet, Cmiparea = cellproperties
                     # print("calculated actin object")
                     cellvals = [Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cminferet, Cmiparea, top, bot]
                     biological_conditions_satisfied, cellcut = experimentalparams.checkcellconditions(cellvals)
@@ -236,9 +235,10 @@ if __name__ == "__main__":
                                 # select only DNA that were selected using membership rules
                                 dnaobj = (labeldna[slices] == (memberdnas[memberdna_no] + 1))
                                 DNAObjects = DNAObjects | 255 * dnaobj
+                                dna_cstack = DNAObjects & CellObject
 
                                 assert (dnaobj.shape == labeldna[slices].shape == labelactin[slices].shape)
-                                Dcentroid, Dvolume, Dxspan, Dyspan, Dzspan, Dmaxferet, Dmeanferet, Dminferet, Dmiparea = ShapeMetrics.calculate_object_properties(
+                                Dcentroid, Dvolume, Dxspan, Dyspan, Dzspan, Dmaxferet, Dminferet, Dmiparea = ShapeMetrics.calculate_object_properties(
                                     dnaobj)
                                 dnastackcentroids[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dcentroid
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dvolume
@@ -252,20 +252,16 @@ if __name__ == "__main__":
                                     t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dminferet / Dmaxferet
                                 dnastackvolfraction[
                                     t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dvolume / Cvolume * 100
-                                # if savethisimage:
-                                #     together = (cell_cstack + dna_cstack) // 2
-                                #     temp_together = together[bbox_actin]
-                                #     out = np.expand_dims(temp_together, axis=(0, 1))
-                                #     out = out.astype(np.uint8)
-                                #     writer = OmeTifWriter.save(savepath + f'{savename}_Actin{stackid}_.tiff',
-                                #                                        overwrite_file=True)
+                                if savethisimage:
+                                    together = (cell_cstack + dna_cstack) // 2
+                                    temp_together = together[bbox_actin]
+                                    out = np.expand_dims(temp_together, axis=(0, 1))
+                                    out = out.astype(np.uint8)
+                                    writer = omeTifWriter.OmeTifWriter(savepath + f'{savename}_Actin{stackid}_.tiff',
+                                                                       overwrite_file=True)
+                                    writer.save(out)
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)
-
-                        saveindividualcellstack = (np.random.random(1)[0] < 0.1) #10% sample ~~is_//10
-                        if saveindividualcellstack:
-                            stackfilename = f"{channel}_{basename}_{obj_index}.npz"
-                            cellstack.mergestack(CellObject, DNAObjects, GFPObjects, savename = join(savepath, stackfilename), save = True)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         if doindividualcalcs:
                             processes.append((t, w, r, fovno, obj_index, Cvolume,executor.submit(ShapeMetrics.individualcalcs, GFPObjects)))
@@ -296,7 +292,7 @@ if __name__ == "__main__":
 
             for it, iw, ir, ifovno, obj_id, cvol, process in processes:
                 features = process.result()
-                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d = features
+                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d = features
                 # print("gcount:", Gcount)
                 # print("indorient", indorient3D.shape, indorient3D.T.shape)
                 gfpstackcpc[it, iw, 0, ir % 5, ifovno, obj_id] = Gcount
@@ -313,7 +309,6 @@ if __name__ == "__main__":
                 gfpstackindorientations[it, iw, 0, ir % 5, fovno, obj_id, :] = Gorient3D
                 gfpstackzdistr[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gz_dist
                 gfpstackraddist2d[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
-                gfpstackraddist2dmean[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d*Cmeanferet/Cmaxferet
                 gfpstackraddist3d[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
@@ -334,10 +329,10 @@ if __name__ == "__main__":
     # dnastackinvaginationvfrac
     allGFPvals = [gfpstackcentroids, gfpstackvols, gfpstackxspan, gfpstackyspan, gfpstackzspan, gfpstackmiparea,
                   gfpstackmaxferet, gfpstackminferet, gfpstackaspectratio2d, gfpstackvolfrac, gfpstackcpc,
-                  gfpstackindorientations, gfpstackzdistr, gfpstackraddist2d, gfpstackraddist2dmean, gfpstackraddist3d]
+                  gfpstackindorientations, gfpstackzdistr, gfpstackraddist2d, gfpstackraddist3d]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
-                    "radial distribution 2D","normalized radial distribution 2D", "radial distribution 3D"]
+                    "radial distribution 2D", "radial distribution 3D"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True

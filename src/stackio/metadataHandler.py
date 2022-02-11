@@ -1,6 +1,5 @@
 import json
-
-from src.AnalysisTools import experimentalparams
+from src.AnalysisTools import experimentalparams as ep
 
 
 # def createstackjson(path, ):
@@ -43,6 +42,14 @@ def createcelldict(id, parent=None, xspan=None, yspan=None, zspan=None, centroid
                 'centroid': list(centroid)}
     return celldict
 
+class cellobject():
+    def __init__(self, inputchannelname=None):
+        if self.validchannelname(inputchannelname):
+            channelinfo = ep.channel(inputchannelname)
+            self.channelname = inputchannelname
+            self.channelprotein = channelinfo.getproteinname(inputchannelname)
+            self.organellestructurename = channelinfo.getorganellestructurename(inputchannelname)
+            self.repalphabet = channelinfo.getrepalphabet(inputchannelname)
 
 def writeCellMetadata(jsonfile, individualcelldict):
     try:

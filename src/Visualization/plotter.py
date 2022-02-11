@@ -8,120 +8,18 @@ from src.AnalysisTools import statcalcs
 plt.rcParams["figure.figsize"] = [12, 9]
 a4_dims = (11.7, 8.27)
 
-
-def generate_plot(data3dlist, propname: str, units: str, savesigma: str = None,
-                  savepath: types.PathLike = "", channel="", withstrpplt: bool = False) -> None:
-    """
-
-    :param data3dlist: input data. must be a 3d list - with dimensions treatment, week and ID
-    :param propname: property name
-    :param units: units (string) - e.g. micron
-    :param savesigma: string indicating number of standard deviations
-    :param savepath: path to saving plots
-    :param channel: channel name
-    :param withstrpplt: include strip plot with the violinplot if True
-    :return:
-    """
-    datadf = datautils.generatedataframe(data3dlist, propname)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))
-    sns.violinplot(ax=ax, x="Week", y=propname, hue="Treatment", cut=0, data=datadf, gridsize=100,
-                   split=True,
-                   scale="count", )
-
-    ax.set_xlabel('weeks', fontsize=22)
-    ax.set_ylabel(f"{propname}{units}", fontsize=18)
-
-    plt.setp(ax, xticks=[y for y in range(experimentalparams.USEDWEEKS)],
-             xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
-    plt.savefig(
-        f"{savepath}_{channel}_{propname}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_s-' + savesigma if savesigma else ''}.png")
-    plt.close()
-    plt.clf()
-
-    # def generate_plot(data3dlist, propname, units, savesigma = None):
-    #     fig, axs = plt.subplots(nrows=1, ncols=usedtreatments, figsize=(18, 8),sharey=True)
-    #     widths = np.zeros((usedtreatments,usedweeks))
-    # ########### normalizing for maximum widths
-    # #     for i in range(usedweeks):
-    # #         freq1,bin1 = np.histogram(data3dlist[0][i],100)
-    # #         freq2,bins2 = np.histogram(data3dlist[1][i],100)
-    # #         widths[0,i] = max(freq1)
-    # #         widths[1,i] = max(freq2)
-    # #     violinwidths = 0.6* (np.max(widths, axis=1)/np.amax(widths))
-
-    # ########### normalizing for w1 widths:
-    #     for i in range(usedweeks):
-    #         freq1,bin1 = np.histogram(data3dlist[0][i],20)
-    #         freq2,bins2 = np.histogram(data3dlist[1][i],20)
-    #         widths[0,i] = max(freq1)
-    #         widths[1,i] = max(freq2)
-    #     maxwidths = (np.max(widths, axis=1)/np.amax(widths))
-    #     inv_w1ratios =  np.flip(widths[:,0])/ np.amax(widths[:,0])
-    #     violinwidths = maxwidths * inv_w1ratios
-    #     print(widths, maxwidths, widths[:,0]/ np.amax(widths[:,0]), violinwidths, maxwidths*violinwidths)
-    # #     return
-
-    #     for t, treatment in enumerate(treatment_type):
-    #             try:
-    #                 wtdata = data3dlist[t].copy()
-    #                 print(type(wtdata), len(wtdata),len(wtdata[0]),len(wtdata[1]),len(wtdata[2]),len(wtdata[3]))
-    # #                 sns.violinplot(ax=axs[t],data= wtdata, width=violinwidths[t], scale="area", cut=0, inner="box",zorder=2)
-    #                 sns.violinplot(ax=axs[t],data= wtdata, scale="width", cut=0, inner="box",zorder=2)
-
-    # #                 axs[t].violinplot(wtdata, widths=violinwidths[t] ,showextrema = False)
-    # #                 axs[t].boxplot(wtdata, widths = 0.15, showfliers = False)
-    #                 axs[t].set_title(treatment)
-    #             except Exception as e:
-    #                 print(w,t, e, len(wtdata))
-    #     for ax in axs:
-    #         ax.yaxis.grid(True)
-    #         ax.set_xlabel('weeks',fontsize = 22)
-    #         ax.set_ylabel(f" {propname}{units}",fontsize = 22)
-    #     plt.setp(axs, xticks=[y + 1  for y in range(len(wtdata))],
-    #              xticklabels=ws[:usedweeks])
-    # #     plt.show()
-    #     plt.savefig(f"{savepath}{channel}_{propname}_weeks{usedweeks}_{'withstrpplt' if withstrpplt else ''}{'_s-'+savesigma if savesigma else ''}.png")
-    #     plt.close
-    #     plt.clf()
-    #     del fig
-    #     del axs
-
-    # def boolean_indexing(v, fillval=np.nan):
-    #     lens = np.array([len(item) for item in v])
-    #     mask = lens[:,None] > np.arange(lens.max())
-    #     print(lens,lens[:,None], len(l), mask)
-
-    #     out = np.full(mask.shape,fillval)
-    #     print(np.concatenate(v))
-    #     out[mask] = np.concatenate(v)
-    #     return out
-    # l= [[1, 2, 3], [1, 2], [3, 8, 9, 7, 3]]
-    # boolean_indexing(l)
-
-
-# def violinstripplot(data, organelle="Cell", propname="", unit="", sigma=0, savesigma="", savepath="") -> None:
-#     """
-#     TODO: double check data types before finalizing
-#     :param data:
-#     :param organelle: Name of organelle
-#     :param propname:
-#     :param unit:
-#     :param sigma:
-#     :param savesigma:
-#     :return:
-#     """
-#     try:
-#         tempdata = data.copy()
-#         weekly_data_conform = statcalcs.removeoutliers3dlist(tempdata, m=sigma)
-#         inddata = datautils.generatedataframe(weekly_data_conform, propname)
-#
-#         violinstripplotind(inddata, stackdata, channel="Cell", propname=propname, units=f"(in {unit})", savesigma=savesigma, savepath=savepath)
-#         # weekly_data_conform, propname=f"{organelle} {propname}", units=, savesigma=savesigma)
-#         return 0
-#     except Exception as e:
-#         print(e)
-#         return 1
-
+def returnlogbounds(stack):
+    minval = np.nanmin(stack)
+    maxval = np.nanmax(stack)
+    if np.isnan(minval):
+        minval = 0
+    else:
+        minval = np.floor(minval)
+    if np.isnan(maxval):
+        maxval = 1
+    else:
+        maxval = np.ceil(maxval)
+    return int(minval), int(maxval)
 
 def violinstripplot(stackdata, channel="Cell", propname="", units="",
                     savesigma=None, selected_method_type=None,
@@ -148,13 +46,12 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="",
            useall = True
        else:
            assert selected_method_type in method_types
-       # basendim = None
-       # if channel == "Cell":
-       #     basendim = 6
-       # else:
-       #     basendim = 7
-       # stackdata_rmoutlier = statcalcs.removestackoutliers(stackdata)
 
+       try:
+           alpha_indiv = max(4000/np.count_nonzero(~np.isnan(stackdata)), 0.01)
+       except Exception as e:
+           alpha_indiv = 0.5
+       print(f"individual alpha set to: {alpha_indiv}")
        print(np.count_nonzero(~np.isnan(stackdata)))
        stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=2, abstraction=0)
        stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=2, abstraction=1)
@@ -162,32 +59,44 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="",
        print(np.count_nonzero(~np.isnan(stackdata)), np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv)),
              np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack)), np.count_nonzero(~np.isnan(stackdata_rmoutlier_well)))
 
-       # print("after stat ", stackdata_rmoutlier_indiv.shape, stackdata_rmoutlier_stack.shape,
-       #       stackdata_rmoutlier_well.shape)
+       if uselog:
+           stackdata_rmoutlier_indiv = np.log10(stackdata_rmoutlier_indiv)
+           stackdata_rmoutlier_stack = np.log10(stackdata_rmoutlier_stack)
+           stackdata_rmoutlier_well = np.log10(stackdata_rmoutlier_well)
+           # for log range : multiply
 
+           indivlogmin, indivlogmax = returnlogbounds(stackdata_rmoutlier_indiv)
+           stacklogmin, stacklogmax = returnlogbounds(stackdata_rmoutlier_stack)
+           welllogmin, welllogmax = returnlogbounds(stackdata_rmoutlier_well)
+
+           print("in uselog")
+           alllogstacks = [indivlogmin, indivlogmax, stacklogmin, stacklogmax, welllogmin, welllogmax]
+           alllogstacknames = ["indivlogmin", "indivlogmax", "stacklogmin", "stacklogmax", "welllogmin", "welllogmax"]
+           print("before",indivlogmin, indivlogmax, stacklogmin, stacklogmax, welllogmin, welllogmax)
+
+           print("after:", indivlogmin, indivlogmax, stacklogmin, stacklogmax, welllogmin, welllogmax)
+           # logmins = [indivlogmin-1, stacklogmin-1, welllogmin-1]
+           logmins = [indivlogmin, stacklogmin,welllogmin]
+           # logmaxes = [indivlogmax+1, stacklogmax+1, welllogmax+1]
+           logmaxes = [indivlogmax, stacklogmax,welllogmax]
+           print(logmins,"\n", logmaxes)
        index_indiv = datautils.generateindexedstack(stackdata_rmoutlier_indiv, propname)
        index_stack = datautils.generateindexedstack(stackdata_rmoutlier_stack, propname)
        index_well = datautils.generateindexedstack(stackdata_rmoutlier_well, propname)
-       # print("Before expand ", index_indiv.shape, index_stack.shape, index_well.shape)
 
-       # index_indiv = datautils.expandToNdim(index_indiv, setdims=basendim)
-       # index_stack = datautils.expandToNdim(index_stack, setdims=basendim)
-       # index_well = datautils.expandToNdim(index_well, setdims=basendim)
-       # print("After expand ", index_indiv.shape, index_stack.shape, index_well.shape)
-
-       # platedf = datautils.generatedataframe(stackdata)
        data = [index_indiv, index_stack, index_well]
-       alphas = [0.25, 0.75, 1]
+       alphas = [alpha_indiv, 0.75, 1]
        violinwidths = [0.8, 0.8, 0.8]
        boxwidths = [0.8, 0.8, 0.8]
+       unitstext = ""
+       if (units is not None) and (units !=""):
+           unitstext = f"(in {units})"
+       # return
        for m, method in enumerate(method_types):
-
-           print(m, method, selected_method_type, useall)
-           # continue
+           print(method, selected_method_type, useall)
            if (selected_method_type == method) or useall:
                print(f"Plotting {method}")
                fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))  # , sharey=True)
-               # for t, treatment in enumerate(treatment_types):
                # inner = box for single boxplot
                vp = sns.violinplot(ax=axs, x="Week", y=propname, hue="Treatment", cut=0, data=data[m], inner=None,
                                    gridsize=100, palette="turbo", split=True, scale=scaletype,
@@ -207,23 +116,21 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="",
                axs.yaxis.grid(True)
                axs.set_xlabel('Weeks', fontsize=18)
                if uselog:
-                   plt.yscale("log")
-               axs.set_ylabel(f"{channel} {propname}(in {units})", fontsize=18)
-               #     ax.set_xlabel('weeks',fontsize = 22)
-               #     ax.set_ylabel(f"{propname}{units}",fontsize = 18)
+                   from matplotlib import ticker as mticker
+                   axs.yaxis.set_major_formatter(mticker.StrMethodFormatter("$10^{{{x:.2f}}}$"))
+                   axs.yaxis.set_ticks([np.log10(x) for p in range(logmins[m], logmaxes[m]) for x in np.linspace(10**p, 10**(p+1), 10)], minor=True)
 
-               plt.setp(axs, xticks=[y for y in range(experimentalparams.USEDWEEKS)],
+               axs.set_ylabel(f"{channel} {propname}{unitstext})", fontsize=18)
+               plt.setp(axs, xticks=[week for week in range(experimentalparams.USEDWEEKS)],
                         xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
-               # plt.show()
-               plt.savefig(
-                   f"{savepath}_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
+               plt.savefig(f"{savepath}_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
                plt.close()
                plt.clf()
 
 
 if __name__ == "__main__":
     """
-    TODO: an example of plotting
+    Example of violinstripplot
     """
 
     teststack = np.random.random((2, 4, 1, 5, 6, 1000)) * 100
@@ -232,5 +139,5 @@ if __name__ == "__main__":
         teststack = np.expand_dims(teststack, axis=-1)
 
     print(teststack.shape, teststack.ndim)
-    # violinstripplot(stackdata=teststack, channel="testchannel", propname="testproperty", units="units", savesigma=True,
-    #                 selected_method_type="Stackwise")
+    violinstripplot(stackdata=teststack, channel="example channel", propname="some property",
+                            units="", savepath="", savesigma="99", uselog=False)
