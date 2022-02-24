@@ -1,9 +1,10 @@
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
 from aicsshparam import shparam, shtools
+from skimage.morphology import binary_dilation
 
 
-def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, debug = False):
+def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=True, debug=False):
     """
 
     :param CellObject: 3 dimensional stack of
@@ -15,8 +16,14 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, debug = 
     """
     success = False
     try:
+
         assert CellObject.ndim == 3, "Stacks must have 3 dimensions"
         assert CellObject.shape == DNAObjects.shape == GFPObjects.shape, "all channels must be the same size to generate stack"
+        if add_3d_cell_outline:
+            CellObject = np.pad(CellObject, ((1, 1), (1, 1), (1, 1)))
+            DNAObjects = np.pad(DNAObjects, ((1, 1), (1, 1), (1, 1)))
+            GFPObjects = np.pad(GFPObjects, ((1, 1), (1, 1), (1, 1)))
+            CellObject = 1*binary_dilation(CellObject) - 1*CellObject
         cellbw = CellObject > 0
         dnabw = DNAObjects > 0
         gfpbw = GFPObjects > 0
@@ -27,7 +34,7 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, debug = 
         if debug:
             print(f"final dimensions of merged stack: {mergedchannel.shape}")
         mergedchannel = mergedchannel.astype(np.uint8)
-        mergedchannel = mergedchannel*255
+        mergedchannel = mergedchannel * 255
 
         if save:
             OmeTiffWriter.save(data=mergedchannel, uri=f"{savename}.tiff", overwrite_file=True)
@@ -36,7 +43,8 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, debug = 
         print(e)
     return success
 
-def saveSHEsurfaces(stack3d, lmax = 50):
+
+def saveSHEsurfaces(stack3d, lmax=50):
     stack3d = stack3d.data.astype(np.uint8)
     stack3d = stack3d > 0
     stack3d = stack3d.squeeze()
@@ -48,7 +56,6 @@ def saveSHEsurfaces(stack3d, lmax = 50):
     print(coeffs.values())
     print('Error:', mse)
     pass
-
 
 
 if __name__ == "__main__":

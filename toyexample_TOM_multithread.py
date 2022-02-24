@@ -12,7 +12,7 @@ from skimage.measure import label as skilbl
 
 # from src.stackio import metadataHandler as meta
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
-from src.Visualization import plotter ,cellstack
+from src.Visualization import plotter, cellstack
 from src.stackio import stackio
 
 if __name__ == "__main__":
@@ -32,14 +32,13 @@ if __name__ == "__main__":
     ###############################################
 
     # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-
     # segmented_ch_folder = '../Results/2022/Jan28/TOM/segmented/'
     # savepath = '../Results/2022/Feb4/TOM/all/'
 
     segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
     # savepath = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
     # savepath = '../Results/2022/Jan28/TOM/TOM_calcs_test/'
-    savepath = '../Results/2022/Feb11/TOM/results_test2/'
+    savepath = '../Results/2022/Feb25/TOM/results_cellstack/'
     savepathmeta = join(savepath, "meta")
     assert exists(segmented_ch_folder)
     assert exists(savepath)
@@ -75,6 +74,7 @@ if __name__ == "__main__":
     cellstackmaxferet = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
     cellstackaspectratio2d = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
     cellstackminferet = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
+    cellstacksphericity = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
 
     dnastackvols = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackcentroids = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell, 3))
@@ -84,12 +84,14 @@ if __name__ == "__main__":
     dnastackmiparea = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackmaxferet = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackminferet = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
+    dnastacksphericity = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackaspectratio2d = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackvolfraction = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackinvaginationvfrac = np.nan * np.ones(
         (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
 
     gfpstackvols = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
+    gfpstackmeanvols = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
     gfpstackcentroids = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell, 3))
     gfpstackxspan = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
     gfpstackyspan = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
@@ -200,12 +202,12 @@ if __name__ == "__main__":
                     edgetags, top, bot = ShapeMetrics.getedgeconnectivity(slices, objs.shape[0])
                     CellObject = objs[slices]
                     cellproperties = ShapeMetrics.calculate_object_properties(CellObject)
-                    Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cmeanferet, Cminferet, Cmiparea = cellproperties
+                    Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cmeanferet, Cminferet, Cmiparea, Csphericity = cellproperties
                     # print("calculated actin object")
-                    cellvals = [Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cminferet, Cmiparea, top, bot]
-                    biological_conditions_satisfied, cellcut = experimentalparams.checkcellconditions(cellvals)
+                    cellattribute_testvals = [Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cminferet, Cmiparea, top, bot]
+                    biological_conditions_satisfied, cellcut = experimentalparams.checkcellconditions(cellattribute_testvals)
                     # print("satisfied biological conditions?", biological_conditions_satisfied)
-                    if biological_conditions_satisfied:  # and datautils.checkfinitetemp(cellvals[1:8]):
+                    if biological_conditions_satisfied:  # and datautils.checkfinitetemp(cellattribute_testvals[1:8]):
                         ##DNA members
                         savethisimage = False
                         # subtract 1 since this matrix uses indices from 0
@@ -223,6 +225,7 @@ if __name__ == "__main__":
                             cellstackyspan[t, w, 0, r % 5, fovno, obj_index] = Cyspan
                             cellstackzspan[t, w, 0, r % 5, fovno, obj_index] = Czspan
                             cellstackmiparea[t, w, 0, r % 5, fovno, obj_index] = Cmiparea
+                            cellstacksphericity[t, w, 0, r % 5, fovno, obj_index] = Csphericity
                             cellstackmaxferet[t, w, 0, r % 5, fovno, obj_index] = Cmaxferet
                             cellstackminferet[t, w, 0, r % 5, fovno, obj_index] = Cminferet
                             cellstackcentroids[t, w, 0, r % 5, fovno, obj_index] = Ccentroid
@@ -238,7 +241,7 @@ if __name__ == "__main__":
                                 DNAObjects = DNAObjects | 255 * dnaobj
 
                                 assert (dnaobj.shape == labeldna[slices].shape == labelactin[slices].shape)
-                                Dcentroid, Dvolume, Dxspan, Dyspan, Dzspan, Dmaxferet, Dmeanferet, Dminferet, Dmiparea = ShapeMetrics.calculate_object_properties(
+                                Dcentroid, Dvolume, Dxspan, Dyspan, Dzspan, Dmaxferet, Dmeanferet, Dminferet, Dmiparea, Dsphericity = ShapeMetrics.calculate_object_properties(
                                     dnaobj)
                                 dnastackcentroids[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dcentroid
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dvolume
@@ -246,6 +249,7 @@ if __name__ == "__main__":
                                 dnastackyspan[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dyspan
                                 dnastackzspan[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dzspan
                                 dnastackmiparea[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dmiparea
+                                dnastacksphericity[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dsphericity
                                 dnastackmaxferet[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dmaxferet
                                 dnastackminferet[t, w, 0, r % 5, fovno, obj_index, memberdna_no] = Dminferet
                                 dnastackaspectratio2d[
@@ -262,15 +266,16 @@ if __name__ == "__main__":
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)
 
-                        saveindividualcellstack = (np.random.random(1)[0] < 0.1) #10% sample ~~is_//10
+                        # saveindividualcellstack = (np.random.random(1)[0] < 0.1) #10% sample ~~is_//10
+                        saveindividualcellstack = True #10% sample ~~is_//10
                         if saveindividualcellstack:
-                            stackfilename = f"{channel}_{basename}_{obj_index}.npz"
+                            stackfilename = f"{channel}_{basename}_{obj_index}"
                             cellstack.mergestack(CellObject, DNAObjects, GFPObjects, savename = join(savepath, stackfilename), save = True)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         if doindividualcalcs:
-                            processes.append((t, w, r, fovno, obj_index, Cvolume,executor.submit(ShapeMetrics.individualcalcs, GFPObjects)))
+                            processes.append((t, w, r, fovno, obj_index, Cvolume,executor.submit(ShapeMetrics.calculate_multiorganelle_properties, GFPObjects)))
                             # print("doing individual calcs")
-                            # Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d = ShapeMetrics.individualcalcs((GFPObjects))
+                            # Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d = ShapeMetrics.calculate_multiorganelle_properties((GFPObjects))
                             # it = t
                             # iw=w
                             # ir = r
@@ -296,10 +301,11 @@ if __name__ == "__main__":
 
             for it, iw, ir, ifovno, obj_id, cvol, process in processes:
                 features = process.result()
-                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d = features
+                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = features
                 # print("gcount:", Gcount)
                 # print("indorient", indorient3D.shape, indorient3D.T.shape)
                 gfpstackcpc[it, iw, 0, ir % 5, ifovno, obj_id] = Gcount
+                gfpstackmeanvols[it, iw, 0, ir % 5, ifovno, obj_id] = Gmeanvol
                 gfpstackcentroids[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gcentroid
                 gfpstackvols[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gvolume
                 gfpstackxspan[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gspan
@@ -313,7 +319,7 @@ if __name__ == "__main__":
                 gfpstackindorientations[it, iw, 0, ir % 5, fovno, obj_id, :] = Gorient3D
                 gfpstackzdistr[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gz_dist
                 gfpstackraddist2d[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
-                gfpstackraddist2dmean[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d*Cmeanferet/Cmaxferet
+                gfpstackraddist2dmean[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d/Cmeanferet
                 gfpstackraddist3d[it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
@@ -323,21 +329,21 @@ if __name__ == "__main__":
             print("Exception: ", e, traceback.format_exc())
 
     allCellvals = [cellstackcentroids, cellstackvols, cellstackxspan, cellstackyspan, cellstackzspan, cellstackmiparea,
-                   cellstackmaxferet, cellstackminferet, cellstackaspectratio2d]  ##
+                   cellstackmaxferet, cellstackminferet, cellstackaspectratio2d, cellstacksphericity]  ##
     cellpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                     "2D Aspect ratio"]
+                     "2D Aspect ratio", "Sphericity"]
 
     allDNAvals = [dnastackcentroids, dnastackvols, dnastackxspan, dnastackyspan, dnastackzspan, dnastackmiparea,
-                  dnastackmaxferet, dnastackminferet, dnastackaspectratio2d, dnastackvolfraction]
+                  dnastackmaxferet, dnastackminferet, dnastackaspectratio2d, dnastackvolfraction, dnastacksphericity]
     DNApropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "2D Aspect ratio", "Volume fraction"]
+                    "2D Aspect ratio", "Volume fraction", "Sphericity"]
     # dnastackinvaginationvfrac
     allGFPvals = [gfpstackcentroids, gfpstackvols, gfpstackxspan, gfpstackyspan, gfpstackzspan, gfpstackmiparea,
                   gfpstackmaxferet, gfpstackminferet, gfpstackaspectratio2d, gfpstackvolfrac, gfpstackcpc,
-                  gfpstackindorientations, gfpstackzdistr, gfpstackraddist2d, gfpstackraddist2dmean, gfpstackraddist3d]
+                  gfpstackindorientations, gfpstackzdistr, gfpstackraddist2d, gfpstackraddist2dmean, gfpstackraddist3d, gfpstackmeanvols]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
-                    "radial distribution 2D","normalized radial distribution 2D", "radial distribution 3D"]
+                    "radial distribution 2D","normalized radial distribution 2D", "radial distribution 3D", "Mean Volume"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True
@@ -358,7 +364,8 @@ if __name__ == "__main__":
                 fpath = join(savepath, filename)
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
                 loaded = stackio.loadproperty(fpath)
-                success = datautils.array_nan_equal(loaded[loaded.files[0]], prop)
+                success = checksavedfileintegrity(loaded, prop)
+                # success = datautils.array_nan_equal(loaded[loaded.files[0]], prop)
                 if success:
                     print(f"SAVE SUCCESSFUL FOR {filename}\t\tNo. of Datapoints: {np.count_nonzero(~np.isnan(prop))}")
                 else:  # (2, 4, 1, 5, 6, 1000, 50)

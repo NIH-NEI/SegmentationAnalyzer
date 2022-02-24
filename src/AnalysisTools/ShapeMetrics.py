@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from imea import measure_2d
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
+from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
-import traceback
+
 from src.AnalysisTools import conv_hull
 from src.AnalysisTools import experimentalparams as ep
 
@@ -26,7 +27,7 @@ def getedgeconnectivity(slices, maxz):
     connectedbot = False
     connectedtop = False
     minz = 0
-    assert maxz >0, "maximum z must be greater than 0 to detect edge connectivity"
+    assert maxz > 0, "maximum z must be greater than 0 to detect edge connectivity"
     if maxz == 0:
         raise Exception
     top = slices[0].start
@@ -62,17 +63,17 @@ def orientation_3D(bboximage):
         # X = np.nan*np.ones_like(Xpoints)
         # X = np.nan * np.ones().T
         pca = PCA(n_components=3).fit(Xpoints)
-        zc, xc, yc = pca.components_[0] # selecting z,y,x values of the first component
+        zc, xc, yc = pca.components_[0]  # selecting z,y,x values of the first component
         # Calculations of angles for a spherical coordinate system
 
-        r = np.sqrt(zc**2 + xc**2 + yc**2)
-        xy = np.sqrt(xc**2 + yc**2)
-        theta = np.arctan2(zc, xy) * 180/np.pi
-        phi = np.arctan2(yc, zc) * 180/np.pi
+        r = np.sqrt(zc ** 2 + xc ** 2 + yc ** 2)
+        xy = np.sqrt(xc ** 2 + yc ** 2)
+        theta = np.arctan2(zc, xy) * 180 / np.pi
+        phi = np.arctan2(yc, xc) * 180 / np.pi
     return [r, theta, phi]
 
 
-def calculate_object_properties(bboxdata, usephull=False, debug=False):
+def calculate_object_properties(bboxdata, usephull=False, debug=False,gfp=False):
     """
     Does calculations for True voxels within a bounding box provided in input. Using the selected
     area reduces calculation time required. Calculations are done for spans along X, Y and Z axes.
@@ -83,21 +84,27 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False):
     """
     bboxdatabw = (bboxdata > 0)
     miparea = np.nan
-    maxferet, minferet = np.nan, np.nan
+    maxferet, minferet, meanferet, sphericity = np.nan, np.nan, np.nan, np.nan
+    xspan, yspan, zspan = np.nan, np.nan, np.nan
     # print(np.asarray(center_of_mass(bboxdatabw)),np.array([ZSCALE, XSCALE, YSCALE]) )
     centroid = np.multiply(np.asarray(center_of_mass(bboxdatabw)), np.array([ZSCALE, XSCALE, YSCALE]))
     volume = np.count_nonzero(bboxdatabw) * VOLUMESCALE
-    xspan, yspan, zspan = np.nan, np.nan, np.nan
     if volume > 0:
         try:
             ns = np.transpose(np.nonzero(bboxdatabw))
-            #NOTE: new calculations
+            # NOTE: new calculations
             zspan = (ns.max(axis=0)[0] - ns.min(axis=0)[0] + 1) * ZSCALE
             xspan = (ns.max(axis=0)[1] - ns.min(axis=0)[1] + 1) * XSCALE
             yspan = (ns.max(axis=0)[2] - ns.min(axis=0)[2] + 1) * YSCALE
             # proj2dshadow = np.max(bboxdatabw, axis=0) > 0 # same as np.any
             proj2dshadow = np.any(bboxdatabw, axis=0)
             miparea = np.count_nonzero(proj2dshadow) * AREASCALE
+            # if (zspan>ZSCALE) and (xspan>XSCALE) and (yspan>YSCALE):
+            if not gfp:
+                try:
+                    sphericity = getsphericity(bboxdatabw, volume)
+                except:
+                    pass
             # print("Object shadow test:", False in (proj2dshadow==image))
             if usephull:
                 phull = conv_hull.pseudo_hull(proj2dshadow)
@@ -115,10 +122,24 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False):
             print(e)
     else:
         volume = np.nan
-    return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea
+    return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity
 
 
-def individualcalcs(bboxdata):
+def getsphericity(bboxdata, volume):
+    # bboxdata = bboxdata.astype(np.uint8)
+    # strel = np.ones((3,3,3))
+    # eroded_image = binary_erosion(bboxdata, strel, border_value=0)
+    # border_image = bboxdata - eroded_image
+    bboxdata = bboxdata.squeeze()
+    # assert bboxdata.ndim == 3, f"sphericity inputs must be 3 dimensional, currently: {bboxdata.ndim} dimensional"
+    assert bboxdata.ndim == 3
+    verts, faces, normals, values = marching_cubes(bboxdata, 0)  # levelset set to 0 for outermost contour
+    surface_area = mesh_surface_area(verts, faces)
+    sphericity = (36 * np.pi * volume ** 2) ** (1. / 3.) / surface_area
+    return sphericity
+
+
+def calculate_multiorganelle_properties(bboxdata):
     """
     Note: Dimensiond must be in the order: z,x,y
 
@@ -139,14 +160,12 @@ def individualcalcs(bboxdata):
 
     measurements for individual organelles
     """
-    # print("GFP initiated", flush=True)
-    # centroids, volumes, xspans, yspans, zspans, maxferets, minferets, orientations3D = [], [], [], [], [], [], [], []
     mno = ep.MAX_ORGANELLE_PER_CELL
     # centerz = ep.Z_FRAMES_PER_STACK//2+1
 
-    volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas = np.nan * np.ones(mno), np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
+    volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, sphericities = np.nan * np.ones(
+        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(
+        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     z_distributions, radial_distribution3ds, radial_distribution2ds = np.nan * np.ones(mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno)
     organellelabel, organellecounts = label(bboxdata > 0)
@@ -154,18 +173,17 @@ def individualcalcs(bboxdata):
 
     centroids, orientations3D = np.nan * np.ones((mno, 3)), np.nan * np.ones((mno, 3))
     cellcentroid = np.multiply(np.asarray(center_of_mass(bboxdata)), np.array([ZSCALE, XSCALE, YSCALE]))
-    # print("GFP initiated2", flush=True)
-    # try:
+    meanvolume = None
     for index, row in org_df.iterrows():
         if index < mno:
             org_index = int(row['organelle_index'])
             orgs = organellelabel == org_index
             bboxcrop = find_objects(orgs)
-            gfpslices = bboxcrop[0] # slices for gfp channel
+            gfpslices = bboxcrop[0]  # slices for gfp channel
             # All properties obtained from calcs are already scaled
-            centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea = calculate_object_properties(bboxdata[gfpslices])
-            # distributioncalcs
-            z_dist = centroid[0] - cellcentroid[0] # distance from centroid of the cell
+            centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(bboxdata[gfpslices],gfp=True)
+            # distribution calculations
+            z_dist = centroid[0] - cellcentroid[0]  # distance from centroid of the cell
             radial_distribution2d = np.sqrt((centroid[1] - cellcentroid[1]) ** 2 + (centroid[2] - cellcentroid[2]) ** 2)
 
             radial_distribution3d = np.sqrt((cellcentroid[0] - centroid[0]) ** 2 + (cellcentroid[1] - centroid[1]) ** 2
@@ -201,6 +219,7 @@ def individualcalcs(bboxdata):
         else:
             print(f"more than {mno} organelles found: {organellecounts}")
             # add "organellecounts"
+    meanvolume = np.nanmean(volume)
     # except Exception as e:
     #     print(e, traceback.format_exc())
-    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds
+    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume

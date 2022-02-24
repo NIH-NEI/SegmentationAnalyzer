@@ -246,8 +246,8 @@ def getwr_3channel(df, af, lf, debug=False):
     s1, r, fov = basestringdna.split("_")
     w = s1.split("-")[1]
     w_ = experimentalparams.WS.index(w)
-    r_ = int(r[1:]) - 2
-    fov_ = int(fov[-1:]) - 1
+    r_ = int(r[1:]) - 2 # r goes from 2 to 11 - change it to 0-9
+    fov_ = int(fov[-1:]) - 1 # fov goes from 1 to 6 - change it to 0-5
     return w, r, w_, r_, fov, fov_, basestringdna
 
 

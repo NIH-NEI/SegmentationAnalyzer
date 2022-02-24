@@ -3,7 +3,7 @@ from src.AnalysisTools import types
 USEDTREATMENTS = 2
 USEDWEEKS = 4  # weeks used for calculations: 1-4
 USEDWELLS = 5
-WELLS = ["well_1", "well_2", "well_3", "well_4", "well_5"] # placeholder names. Use generate repinfo whenever necessary
+WELLS = ["well_1", "well_2", "well_3", "well_4", "well_5"]  # placeholder names. Use generate repinfo whenever necessary
 TREATMENT_TYPES = ["PGE2", "HPI4"]
 WS = ["W1", "W2", "W3", "W4", "W5", "W6"]  # Weeks
 FIELDSOFVIEW = ["F001", "F002", "F003", "F004", "F005", "F006"]  # Fields of view
@@ -31,25 +31,31 @@ X = X_PIXELS_PER_STACK
 STACK_DIMENSION_ORDER = "(T, C, Z, X, Y)"
 ORIGINAL_STACK_SHAPE = (T, C, Z, X, Y)
 
+
 def getunits(propertyname):
-    units = {"Centroid": "microns",
-            "Volume":"cu. microns",
-            "X span": "microns",
-            "Y span": "microns",
-            "Z span": "microns",
-            "MIP area":"sq. microns",
-            "Max feret": "microns",
-            "Min feret": "microns",
-            "2D Aspect ratio": None,
-            "Volume fraction": "percent",
-            "Count per cell": None,
-            "Orientation": None,
-            "z-distribution": "microns",
-            "radial distribution 2D": "microns",
-            "radial distribution 3D": "microns"
+    units = {
+        "Centroid": "microns",
+        "Volume": "cu. microns",
+        "Mean Volume": "cu. microns",
+        "X span": "microns",
+        "Y span": "microns",
+        "Z span": "microns",
+        "MIP area": "sq. microns",
+        "Max feret": "microns",
+        "Min feret": "microns",
+        "2D Aspect ratio": None,
+        "Volume fraction": "percent",
+        "Count per cell": None,
+        "Orientation": None,
+        "z-distribution": "microns",
+        "radial distribution 2D": "microns",
+        "normalized radial distribution 2D": None,
+        "radial distribution 3D": "microns",
+        "Sphericity": None
     }
     print("PROPERTYNAME:", propertyname, "UNITS:", propertyname in units.keys())
     return units[propertyname]
+
 
 def generate_repinfo(_alphabets: types.strlist = None):
     """
@@ -127,7 +133,6 @@ def getusedchannels(filelist):
     return channels
 
 
-
 def checkstackconditions(vols, xspans, yspans, zspans, mipareas):
     """
     TODO: finalize
@@ -174,7 +179,7 @@ def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
 
 class channel():
     def __init__(self, inputchannelname=None):
-        #TODO: refactor to static
+        # TODO: refactor to static
         self.allchannelnames = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
                                 "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
                                 "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]
@@ -255,7 +260,7 @@ class channel():
         else:
             raise Exception(
                 f"Invalid Channel name:{inputchannelname}. Name must be one of {self.allchannelnames}")
-        self.minarea = {
+        self.minarea = {  # TODO: get values from current segmenter or remove
             "dna": 4,
             "actin": 4,
             "membrane": 4,

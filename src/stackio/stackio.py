@@ -7,7 +7,7 @@ import pandas as pd
 from aicsimageio import AICSImage
 from aicsimageio.writers import OmeTiffWriter
 from tifffile import imread
-
+from src.AnalysisTools import datautils
 from src.AnalysisTools import types
 
 
@@ -98,19 +98,57 @@ def saveproperty(stack, filepath=None, type="pickle"):
 
 
 def loadproperty(fpath):
-    loadedfile = np.load(fpath)
-    return loadedfile
+    loadedarray = None
+    if fpath.endswith(".npz"):
+        loadedfile = np.load(fpath)
+        loadedarray = loadedfile[loadedfile.files[0]]
+    return loadedarray
 
+def checksavedfileintegrity(loadedstackdata, savestackdata, ftype="npz"):
+    loaded_equals_saved = False
+    if ftype == "npz":
+        # loadedstackdata = loaded[loaded.files[0]]
+        loaded_equals_saved = datautils.array_nan_equal(loadedstackdata, savestackdata)
+    return loaded_equals_saved
+
+def convertfromnpz(npzpath, targetdir = None, totype = "csv"):
+    from src.AnalysisTools import experimentalparams as ep
+    import os
+    # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
+
+    isconverted = False
+    if totype == "csv":
+        GFPchannel, organelletype, propertyname, strsigma = npzpath[:-4].split("/")[-1].split("_")
+
+        loadedstackdata = loadproperty(npzpath)
+        array3d = loadedstackdata.reshape((ep.USEDTREATMENTS, ep.USEDWEEKS,-1))
+        array3ddf = datautils.generatedataframe(array3d, propertyname)
+        csvname = os.path.join(targetdir,"".join([npzpath[:-4], ".csv"]))
+        check = array3ddf.to_csv(csvname)
+        if check is None:
+            isconverted = True
+
+    return isconverted
 
 if __name__ == "__main__":
-    n1, n2, n3, n4, n5 = 12, 42, 15, 10, 3
-    exshape = (n1,n2,n3,n4,n5)
-    testmat = np.arange(n1*n2*n3*n4*n5).reshape(exshape)
-    fpath = "C:/Users/satheps/PycharmProjects/Results/2022/Jan21/savetest/testmat.npz"
+    import os
+    from os.path import join, isfile
+    convertfromdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb18/TOM/results_all/npz/'
+    targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb25/TOM/csv_feb18/'
+    files = os.listdir(convertfromdir)
 
-    saveproperty(testmat, filepath=fpath, type = "npz")
-    loaded = loadproperty(fpath)
-    # print(loaded.shape)
-    # print(loaded == testmat)
-    print((not False in (loaded['arr_0']==testmat)))
-    print(loaded.files, loaded[loaded.files[0]].shape )
+    datafiles = [f for f in files if isfile(join(convertfromdir, f)) if f.__contains__('.npz')]
+    for datafile in datafiles:
+        filepath = join(convertfromdir,datafile)
+        convertfromnpz(npzpath=filepath, targetdir= targetdir)
+    # n1, n2, n3, n4, n5 = 12, 42, 15, 10, 3
+    # exshape = (n1,n2,n3,n4,n5)
+    # testmat = np.arange(n1*n2*n3*n4*n5).reshape(exshape)
+    # fpath = "C:/Users/satheps/PycharmProjects/Results/2022/Jan21/savetest/testmat.npz"
+    #
+    # saveproperty(testmat, filepath=fpath, type = "npz")
+    # loaded = loadproperty(fpath)
+    # # print(loaded.shape)
+    # # print(loaded == testmat)
+    # print((not False in (loaded['arr_0']==testmat)))
+    # print(loaded.files, loaded[loaded.files[0]].shape )

@@ -1,5 +1,7 @@
+import logging
+
 import numpy as np
-from scipy.stats import norm
+from scipy.stats import norm, f_oneway, ks_2samp, chisquare, ttest_ind
 
 from src.AnalysisTools import experimentalparams as ep
 from src.AnalysisTools.datautils import create3dlist
@@ -71,22 +73,68 @@ def perctosd(percentile: float = 95.452):
     return z_crit
 
 
-def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 2, fixeddims=6):
+def one_way_anova(listofarrays):
+    assert len(listofarrays) >= 2, f" list must contain 2 or more samples. Currently{len(listofarrays)}"
+    try:
+        fvalue, pvalue = f_oneway(*listofarrays)
+    except Exception as e:
+        fvalue, pvalue = np.nan, np.nan
+        logging.warning("ANOVA exception:", e)
+    return fvalue, pvalue
+
+
+def kstest(listofarrays):
+    assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
+    try:
+        print("Listofarrays",*listofarrays)
+        ksstat, kspvalue = ks_2samp(*listofarrays)
+    except Exception as e:
+        ksstat, kspvalue = np.nan, np.nan
+        logging.warning("KStest exception:", e)
+    return ksstat, kspvalue
+
+
+def chisquaretest(listofarrays):
+    assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
+    try:
+        chisq, chipvalue = chisquare(*listofarrays)
+    except Exception as e:
+        chisq, chipvalue = np.nan, np.nan
+        logging.warning("ChiSquared exception:", e)
+
+    return chisq, chipvalue
+
+
+def ttest(listofarrays):
+    assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
+    try:
+        f, p = ttest_ind(*listofarrays)
+    except Exception as e:
+        f, p = np.nan, np.nan
+        logging.warning("Ttest exception:", e)
+    return f, p
+
+
+def stackbyabstractionlevel(stackdata, abstraction, fixeddims=6):
+    dims = stackdata.ndim
+    axes = (0, 1, 2, 3, 4, 5, 6)[:dims]  # to account for cell vs organelle dimensions
+    if abstraction:
+        abstraction = abstraction + dims - fixeddims  # to account for cell vs organelle dimensions
+        stackdata = np.nanmean(stackdata, axis=axes[dims - abstraction:dims])
+        print("Abstraction axes", axes[dims - abstraction:dims], stackdata.shape, dims, abstraction)
+    return stackdata
+
+
+def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 2):
     """
     expected dimensions of stackdata: ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
     :param stackdata:
     :param m:
     :return:
     """
-    dims = stackdata.ndim
-    axes = (0, 1, 2, 3, 4, 5, 6)[:dims]# to account for cell vs organelle dimensions
-    # exit()
-    if abstraction:
-        abstraction = abstraction + dims - fixeddims  # to account for cell vs organelle dimensions
-        stackdata = np.nanmean(stackdata, axis=axes[dims-abstraction:dims])
-        # print("Abstraction axes", axes[dims - abstraction:dims], stackdata.shape, dims, abstraction)
-    nstackdata = stackdata.copy()
 
+    stackdata = stackbyabstractionlevel(stackdata, abstraction)
+    nstackdata = stackdata.copy()  # a separate copy to avoid mutating stackdata
     s = stackdata.shape
     for treatment in range(s[0]):
         for week in range(s[1]):
@@ -98,22 +146,9 @@ def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 
             # nooutlierarray = selectedarray.copy()
             selectedarray[~condition] = np.nan
             nstackdata[treatment, week] = selectedarray
-            # print(mean, mean1, stdev, stdev1, np.count_nonzero(selectedarray[~np.isnan(selectedarray)]))
-            # print(treatment, week, nstackdata.shape, nstackdata[treatment, week].shape, selectedarray.shape)
-    #
-    # if 3 < dims < 8:
-    #     if dims != 7:
-    #         for i in range(7 - dims):
-    #             stackdata = np.expand_dims(stackdata, axis=-1)
-    #
-    # assert (stackdata.ndim == 7)
-
+            print(f"treatment: {treatment}, week: {week}, nstackdata dimensions: {nstackdata.shape}, nstackdata [t,w] dimensions: {nstackdata[treatment, week].shape}, original array dimensions: {selectedarray.shape}")
     return nstackdata
 
-
-# def reportoutliervalues(vol):
-#     if vol > 10000:
-#         print(vol, ">10k")
 
 if __name__ == "__main__":
     n1, n2, n3, n4, n5 = 5, 6, 1, 12, 234
@@ -126,8 +161,8 @@ if __name__ == "__main__":
     condition = np.abs(selectedarray - mean) < 1 * stdev
     newarray = selectedarray.copy()
     newarray[~condition] = np.nan
-    print(condition.shape, mean, stdev, np.min(selectedarray), np.max(selectedarray))
-    print(False in condition)
-    print(selectedarray[condition].shape, selectedarray[~condition].shape)
-    # print((selectedarray).shape, newarray.shape, selectedarray == newarray)
-    print(newarray)
+    # # print(condition.shape, mean, stdev, np.min(selectedarray), np.max(selectedarray))
+    # # print(False in condition)
+    # print(selectedarray[condition].shape, selectedarray[~condition].shape)
+    # # print((selectedarray).shape, newarray.shape, selectedarray == newarray)
+    # print(newarray)
