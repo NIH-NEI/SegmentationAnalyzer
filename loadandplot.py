@@ -34,7 +34,7 @@ def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, strsig
         for pid, pdim in enumerate(propertybydim[propid]):
             dimpropertyname = f"{propertyname}_{pdim}"
             dimstackdata = stackdata[..., pid]
-            units = f"{unitsbydim[pid]}"
+            units = f"{unitsbydim[propid][pid]}"
             print(f"Plotting {propertyname} {pid}: {dimpropertyname}:{dimstackdata.shape}")
             plotter.violinstripplot(stackdata=dimstackdata, channel=organelletype, propname=dimpropertyname,
                                     units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
@@ -47,13 +47,16 @@ def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, strsig
 
 def loadandplot(calcfolder='../Results/2022/Feb4/TOM/newpropstest_add1/',
                 savefolder='../Results/2022/Feb4/TOM/newpropstest_add1/plots/', sigma=None):
-    # calcfolder = '../Results/2022/Feb11/TOM/results_test2/npz/'
-    # calcfolder = '../Results/2022/Feb18/TOM/results_wsphericity/npz/'
-    # savefolder = '../Results/2022/Feb18/TOM/results_wsphericity/plots/'
-    calcfolder = '../Results/2022/Feb18/TOM/results_all/npz/'
-    # savefolder = '../Results/2022/Feb18/TOM/results_all/plots/'
-    # savefolder = '../Results/2022/Feb18/TOM/results_all/plots_withoutliers/'
-    savefolder = '../Results/2022/Feb25/TOM/results_all/plots_chkstat/'
+    # calcfolder = '../Results/2022/Mar25/TOM/calcs/'
+    # calcfolder = '../Results/2022/Mar25/SEC61/calcs/'
+    calcfolder = '../Results/2022/Apr1/LAMP1/calcs/'
+    # calcfolder = '../Results/2022/Mar11/sec61b/results/'
+
+    # calcfolder = '../Results/2022/Feb18/TOM/results_all/npz/'
+    # calcfolder = '../Results/2022/Mar4/channels/lamp1/results/'
+    # savefolder = '../Results/2022/Mar11/TOM/fc_allstacks/plots/'
+    savefolder = '../Results/2022/Apr1/LAMP1/plots/'
+    # savefolder = '../Results/2022/Mar4/channels/lamp1/plots/'
 
     files = os.listdir(calcfolder)
     datafiles = [f for f in files if isfile(join(calcfolder, f)) if f.__contains__('.npz')]
@@ -70,7 +73,7 @@ def loadandplot(calcfolder='../Results/2022/Feb4/TOM/newpropstest_add1/',
             stackdata = stackio.loadproperty(join(calcfolder, datafile))
             # stackdata = loadedfile[loadedfile.files[0]]
             # print(datafile)
-            # if not propertyname.__contains__("normalized"):
+            # if not propertyname.__contains__("Volume"):
             #     continue
             print(GFPchannel, organelletype, propertyname, float(strsigma))
             print(stackdata.shape, len(np.unique(stackdata)), np.count_nonzero(~np.isnan(stackdata)))

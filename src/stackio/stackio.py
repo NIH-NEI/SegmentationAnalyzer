@@ -5,10 +5,11 @@ import traceback
 import numpy as np
 import pandas as pd
 from aicsimageio import AICSImage
-from aicsimageio.writers import OmeTiffWriter
+# from aicsimageio.writers import OmeTiffWriter
 from tifffile import imread
 from src.AnalysisTools import datautils
 from src.AnalysisTools import types
+from src.stackio import labelledcsvhandler
 
 
 #
@@ -32,7 +33,6 @@ def opensegmentedstack(name: types.PathLike,
     """
     Handles simple binary segmentations as well as 3 color segmentations used in project.
 
-    TODO: test
     opens segmented stacks. whiteonblack
     :param debug:
     :param name:
@@ -40,6 +40,9 @@ def opensegmentedstack(name: types.PathLike,
     :param whiteonblack: default indicates if image is whiteonblack or blackonwhite. The defaults may be different for another dataset
     :return:
     """
+    if name.endswith("csv"):
+        labelledcsvhandler
+        pass # TODO
     binary = None
     seg = imread(name)
     uniquenos = np.unique(seg)
@@ -111,20 +114,74 @@ def checksavedfileintegrity(loadedstackdata, savestackdata, ftype="npz"):
         loaded_equals_saved = datautils.array_nan_equal(loadedstackdata, savestackdata)
     return loaded_equals_saved
 
-def convertfromnpz(npzpath, targetdir = None, totype = "csv"):
+def convertfromnpz(npzpath, targetdir = None, totype = "csv", save =True):
     from src.AnalysisTools import experimentalparams as ep
     import os
     # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
 
     isconverted = False
     if totype == "csv":
+        print(f"saving as {totype}")
         GFPchannel, organelletype, propertyname, strsigma = npzpath[:-4].split("/")[-1].split("_")
 
         loadedstackdata = loadproperty(npzpath)
         array3d = loadedstackdata.reshape((ep.USEDTREATMENTS, ep.USEDWEEKS,-1))
         array3ddf = datautils.generatedataframe(array3d, propertyname)
-        csvname = os.path.join(targetdir,"".join([npzpath[:-4], ".csv"]))
-        check = array3ddf.to_csv(csvname)
+        if save:
+            csvfilename = f"{GFPchannel}_{organelletype}_{propertyname}.csv"
+            csvpath = os.path.join(targetdir,csvfilename)
+            check = array3ddf.to_csv(csvpath)
+        else:
+            return array3ddf # TODO : Support for merging various properties in one file
+        if check is None:
+            isconverted = True
+
+    return isconverted
+
+def convertfromnpz_allproperties(npzfolderpath, targetdir = None, totype ="csv", organelle ="Cell", save =True):
+    from src.AnalysisTools import experimentalparams as ep
+    import os
+    datafiles = [join(npzfolderpath, f) for f in files if isfile(join(npzfolderpath, f)) if f.__contains__('.npz')]
+
+    # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
+    isconverted = False
+    array3ddfs = None
+    firstloop= True
+    if totype == "csv":
+        for datafile in datafiles:
+            GFPchannel, organelletype, propertyname, strsigma = datafile[:-4].split("/")[-1].split("_")
+            if organelletype == organelle:
+                print(datafile,":::", GFPchannel, organelletype, propertyname, strsigma)
+                loadedstackdata = loadproperty(datafile)
+                # labelids = np.arange(loadedstackdata.shape[-1])  # this may be different for each organelle
+
+                # names = ["Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle"]  #
+                # namevalues = [ep.TREATMENT_TYPES, ep.WS[:ep.USEDWEEKS], GFPchannel, ep.WELLS, ep.FIELDSOFVIEW,
+                #               list(np.arange(ep.MAX_CELLS_PER_STACK)), labelids]
+                # index = pd.MultiIndex.from_product(namevalues, names=names)
+                # array3d = loadedstackdata.reshape((ep.USEDTREATMENTS, ep.USEDWEEKS,-1))
+                array3ddf = datautils.generateindexeddataframe(loadedstackdata, propertyname)
+                # print(array3ddf)
+                if firstloop:
+                    array3ddfs = array3ddf.copy()
+                    firstloop = False
+                else:
+                    newpropcol = list(array3ddf.columns)[-1]
+                    print(newpropcol)
+                    if newpropcol == "Centroid": # ignore centroid for now
+                        continue
+                    else:
+                        array3ddfs[newpropcol] = array3ddf[newpropcol]
+                # print(type(list(array3ddf.columns)[-1]))
+        # print(array3ddfs)
+        # exit()
+        if save:
+            print(f"saving as {totype}")
+            csvfilename = f"{GFPchannel}_{organelle}.csv"
+            csvpath = os.path.join(targetdir,csvfilename)
+            check = array3ddfs.to_csv(csvpath)
+        else:
+            return array3ddfs # TODO : Support for merging various properties in one file
         if check is None:
             isconverted = True
 
@@ -134,13 +191,18 @@ if __name__ == "__main__":
     import os
     from os.path import join, isfile
     convertfromdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb18/TOM/results_all/npz/'
-    targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb25/TOM/csv_feb18/'
+    targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Mar18/combinecsv/'
     files = os.listdir(convertfromdir)
-
-    datafiles = [f for f in files if isfile(join(convertfromdir, f)) if f.__contains__('.npz')]
-    for datafile in datafiles:
-        filepath = join(convertfromdir,datafile)
-        convertfromnpz(npzpath=filepath, targetdir= targetdir)
+    #####################################################################################
+    convertfromnpz_allproperties(npzfolderpath=convertfromdir, targetdir=targetdir)
+    #####################################################################################
+    # datafiles = [f for f in files if isfile(join(convertfromdir, f)) if f.__contains__('.npz')]
+    # for datafile in datafiles:
+    #     filepath = join(convertfromdir,datafile)
+    #     a = convertfromnpz(npzpath=filepath, targetdir= targetdir)
+    #     print(a)
+    # #     exit(0)
+    #####################################################################################
     # n1, n2, n3, n4, n5 = 12, 42, 15, 10, 3
     # exshape = (n1,n2,n3,n4,n5)
     # testmat = np.arange(n1*n2*n3*n4*n5).reshape(exshape)
@@ -152,3 +214,5 @@ if __name__ == "__main__":
     # # print(loaded == testmat)
     # print((not False in (loaded['arr_0']==testmat)))
     # print(loaded.files, loaded[loaded.files[0]].shape )
+    #####################################################################################
+

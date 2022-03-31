@@ -6,7 +6,12 @@ import pandas as pd
 
 from src.AnalysisTools import experimentalparams, types
 
-
+tn = 4
+"""
+tn = 4 for TOM
+3 for LAMP
+4 for sec
+"""
 def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
                  len1: int = experimentalparams.USEDWEEKS):
     """
@@ -94,7 +99,7 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
 
-def generateindexedstack(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel", basendim=7):
+def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel", basendim=7):
     stackdims = stackdata.ndim
     abstraction = basendim - stackdims
     if not isinstance(usedchannels, list):
@@ -191,6 +196,7 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
     :return: ordered lists of the 3 channels with corresponding filenames at same list index.
     """
     dnafiles, actinfiles, GFPfiles = [], [], []
+    # tn=4
     if debug:
         print(len(dnafiles), len(actinfiles), len(actinfiles))
         print(len(dnafnames), len(actinfnames), len(GFPfnames))
@@ -207,7 +213,9 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                 print("ACTIN:", baseaname)
             if basedname == baseaname:
                 for Tf in GFPfnames:
-                    baselname = "_".join(Tf.split("_")[:-4])  # check
+                    baselname = "_".join(Tf.split("_")[:-tn])  # check
+                    baselname = baselname.replace("s2","") # temporary for lamp1
+                    # Tf = Tf.replace("s2","") # temporary for lamp1
                     if debug:
                         print("GFP:", baselname)
                     if basedname == baselname:
@@ -237,12 +245,15 @@ def getwr_3channel(df, af, lf, debug=False):
     :param lf: gfp_channel_filenames
     :return: week id, replicate id, week no. replicate number, common base string
     """
+    # print(lf)
+    # exit()
+    lf = lf.replace("s2","") # NOTE: temporary for lamp1
     basestringdna = "_".join(df.split("_")[:-2])
     basestringactin = "_".join(af.split("_")[:-2])
-    basesstringlmp = "_".join(lf.split("_")[:-4])
+    basesstringgfp = "_".join(lf.split("_")[:-tn])
     if debug:
-        print(basestringdna, basestringactin, basesstringlmp)
-    assert basestringdna == basestringactin == basesstringlmp, "unequal string lengths"
+        print(basestringdna, basestringactin, basesstringgfp)
+    assert basestringdna == basestringactin == basesstringgfp, f"unequal string lengths {basesstringgfp}, {basestringdna}, {basestringactin}"
     s1, r, fov = basestringdna.split("_")
     w = s1.split("-")[1]
     w_ = experimentalparams.WS.index(w)

@@ -12,8 +12,8 @@ a4_dims = (11.7, 8.27)
 
 
 def returnlogbounds(stack, getintegers=True):  # non int doesnt work since we need range()
-    minval = np.nanmin(stack)
-    maxval = np.nanmax(stack)
+    minval = np.log10(np.nanmin(stack))
+    maxval = np.log10(np.nanmax(stack))
     if np.isnan(minval):
         minval = 0
     else:
@@ -28,6 +28,7 @@ def returnlogbounds(stack, getintegers=True):  # non int doesnt work since we ne
             maxval = np.ceil(maxval)
         else:
             maxval = 1.1 * maxval
+
     return int(minval), int(maxval)
 
 
@@ -106,8 +107,8 @@ def stat_tests(stack, savepath="", channel="", propertyname="", percentile=90, g
     for w, week in enumerate(weeks[:usedweeks]):
         # default length should be 2
         weeklist = [stack_wt[j, w][~np.isnan(stack_wt[j, w])].flatten() for j in range(usedtreatments)]
-        print(f"channel: {channel}, property:{propertyname}, weeklist{w}", list(range(usedtreatments)),
-                      [wk.ndim for wk in weeklist])
+        # print(f"channel: {channel}, property:{propertyname}, weeklist{w}", list(range(usedtreatments)),
+        #               [wk.ndim for wk in weeklist])
 
         # chisq, pvalue_chisq = statcalcs.chisquaretest(weeklist)
         # chisq_ps_treatmentwise.append(pvalue_chisq)
@@ -123,8 +124,8 @@ def stat_tests(stack, savepath="", channel="", propertyname="", percentile=90, g
     ######################################################################
     for t, treatment in enumerate(treatments):
         treatmentlist = [stack_wt[t, i][~np.isnan(stack_wt[t, i])].flatten() for i in range(usedweeks)]
-        print(f"channel: {channel}, property:{propertyname}, anovalist{t}", list(range(usedweeks)),
-                      [tr.ndim for tr in treatmentlist])
+        # print(f"channel: {channel}, property:{propertyname}, anovalist{t}", list(range(usedweeks)),
+        #               [tr.ndim for tr in treatmentlist])
         fvalue_anova, pvalue_anova = statcalcs.one_way_anova(treatmentlist)
         anova_fs_weekly.append(fvalue_anova)
         anova_ps_weekly.append(pvalue_anova)
@@ -203,9 +204,9 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
     else:
         usedata = rmoutlierdata
     ####################################################################################################
-    index_indiv = datautils.generateindexedstack(usedata[0], propname)
-    index_stack = datautils.generateindexedstack(usedata[1], propname)
-    index_well = datautils.generateindexedstack(usedata[2], propname)
+    index_indiv = datautils.generateindexeddataframe(usedata[0], propname)
+    index_stack = datautils.generateindexeddataframe(usedata[1], propname)
+    index_well = datautils.generateindexeddataframe(usedata[2], propname)
     data = [index_indiv, index_stack, index_well]
     ####################################################################################################
     # alphas = [alpha_indiv, 0.75, 1]
@@ -268,7 +269,7 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
             plt.setp(axs, xticks=[week for week in range(experimentalparams.USEDWEEKS)],
                      xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
             plt.savefig(
-                f"{savepath}_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
+                f"{savepath}{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
             plt.close()
             plt.clf()
 

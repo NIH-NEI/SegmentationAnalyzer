@@ -86,7 +86,7 @@ def one_way_anova(listofarrays):
 def kstest(listofarrays):
     assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
     try:
-        print("Listofarrays",*listofarrays)
+        # print("Listofarrays",*listofarrays)
         ksstat, kspvalue = ks_2samp(*listofarrays)
     except Exception as e:
         ksstat, kspvalue = np.nan, np.nan
@@ -121,7 +121,7 @@ def stackbyabstractionlevel(stackdata, abstraction, fixeddims=6):
     if abstraction:
         abstraction = abstraction + dims - fixeddims  # to account for cell vs organelle dimensions
         stackdata = np.nanmean(stackdata, axis=axes[dims - abstraction:dims])
-        print("Abstraction axes", axes[dims - abstraction:dims], stackdata.shape, dims, abstraction)
+        # print("Abstraction axes", axes[dims - abstraction:dims], stackdata.shape, dims, abstraction)
     return stackdata
 
 
@@ -146,7 +146,7 @@ def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 
             # nooutlierarray = selectedarray.copy()
             selectedarray[~condition] = np.nan
             nstackdata[treatment, week] = selectedarray
-            print(f"treatment: {treatment}, week: {week}, nstackdata dimensions: {nstackdata.shape}, nstackdata [t,w] dimensions: {nstackdata[treatment, week].shape}, original array dimensions: {selectedarray.shape}")
+            # print(f"treatment: {treatment}, week: {week}, nstackdata dimensions: {nstackdata.shape}, nstackdata [t,w] dimensions: {nstackdata[treatment, week].shape}, original array dimensions: {selectedarray.shape}")
     return nstackdata
 
 

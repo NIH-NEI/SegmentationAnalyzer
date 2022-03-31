@@ -16,11 +16,9 @@ from src.Visualization import plotter, cellstack
 from src.stackio import stackio
 
 if __name__ == "__main__":
-    usesmallerset = False
     # Important: make sure this indent is maintained throughout
     doindividualcalcs = True
-    # channel = "SEC61B"
-    channel = "LAMP1"
+    channel = "SEC61"
     ###############################################
     usedWs = experimentalparams.USEDWEEKS
     usedTs = experimentalparams.USEDTREATMENTS
@@ -33,24 +31,17 @@ if __name__ == "__main__":
     maxgfp_cell = experimentalparams.MAX_ORGANELLE_PER_CELL
     ###############################################
 
-    # segmented_ch_folder_GFP = '../Results/2022/final_segmentations/TOM20'
-    # segmented_ch_folder_Cell = '../Results/2022/final_segmentations/TOM20/Cell/'
-    # segmented_ch_folder_Cell = '../Results/2022/Mar4/channels/sec61b/segmented/'
-    # segmented_ch_folder_GFP = '../Results/2022/Mar4/channels/sec61b/segmented/'
-    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LAMP1/'
-    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LAMP1/Cell/'
-    # segmented_ch_folder = '../Results/2022/Jan21/TOM_stack_18img/segmented/TOM/'
-    savepath = '../Results/2022/Apr1/LAMP1/calcs/'
+    segmented_ch_folder = '../Results/2022/Mar4/channels/sec61b/segmented/'
+    savepath = '../Results/2022/Mar11/sec61b/results/'
     savepathmeta = join(savepath, "meta")
-    assert exists(segmented_ch_folder_GFP)
-    assert exists(segmented_ch_folder_Cell)
+    assert exists(segmented_ch_folder)
     assert exists(savepath)
     if not exists(savepathmeta):
         mkdir(savepathmeta)
 
-    dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
-    actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
-    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
+    dnafnames = datautils.getFileListContainingString(segmented_ch_folder, 'DNA_RPE.tif')
+    actinfnames = datautils.getFileListContainingString(segmented_ch_folder, 'Actin_RPE.tif')
+    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder, '_GFP')
 
     dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
                                                                                 debug=False)
@@ -126,23 +117,16 @@ if __name__ == "__main__":
 
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = experimentalparams.findtreatment(r)
-            if usesmallerset:
-                uss_fovs = [0, 1]
-                uss_reps = [0, 1]  # will also do 5 and 6 respectively
-                if not (fovno in uss_fovs and r % 5 in uss_reps):
-                    print(f"Skipping {basename} since using a smaller set.")
-                    continue
             print(
                 f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
             if w < usedWs:
 
                 ##GET IMAGES
-                img_GFP = stackio.opensegmentedstack(join(segmented_ch_folder_GFP, GFPfile))
-                img_ACTIN = stackio.opensegmentedstack(join(segmented_ch_folder_Cell, actinfile))  # binary=False
-                img_DNA = stackio.opensegmentedstack(join(segmented_ch_folder_Cell, dnafile))  # binary=False
+                img_GFP = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile))
+                img_ACTIN = stackio.opensegmentedstack(join(segmented_ch_folder, actinfile))  # binary=False
+                img_DNA = stackio.opensegmentedstack(join(segmented_ch_folder, dnafile))  # binary=False
                 # assert np.unique(img_GFP)==np.unique(img_ACTIN)== np.unique(img_DNA)
                 assert img_GFP.shape == img_ACTIN.shape == img_DNA.shape
-                # exit()
                 print("TEST: all unique values should be equal", np.unique(img_GFP), np.unique(img_ACTIN),
                       np.unique(img_DNA))
                 print("TEST: all dimensions  should be equal", img_GFP.shape, img_ACTIN.shape, img_DNA.shape)
@@ -235,7 +219,7 @@ if __name__ == "__main__":
                         # gfp_cstack = None
                         if no_members > 0:
                             # if False:  # decide condition
-                            # savethisimage = True
+                                # savethisimage = True
                             cellstackvols[t, w, 0, r % 5, fovno, obj_index] = Cvolume
                             cellstackxspan[t, w, 0, r % 5, fovno, obj_index] = Cxspan
                             cellstackyspan[t, w, 0, r % 5, fovno, obj_index] = Cyspan
@@ -284,6 +268,7 @@ if __name__ == "__main__":
                                 else:
                                     usememberdnaid = memberdna_no
 
+
                                 dnastackcentroids[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dcentroid
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dvolume
                                 dnastackxspan[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dxspan
@@ -301,7 +286,7 @@ if __name__ == "__main__":
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)
 
-                        saveindividualcellstack = (np.random.random(1)[0] < 0.05)  # 10% sample ~~is_//10
+                        saveindividualcellstack = (np.random.random(1)[0] < 0.1) #10% sample ~~is_//10
                         # saveindividualcellstack = True  # 10% sample ~~is_//10
                         if saveindividualcellstack:
                             cellstackfolder = join(savepath, 'cellstacks').replace("\\", "/")
@@ -310,7 +295,7 @@ if __name__ == "__main__":
                             stackfilename = f"{channel}_{basename}_{obj_index}"
                             cellstack.mergestack(CellObject, DNAObjects, GFPObjects,
                                                  savename=join(cellstackfolder, stackfilename), save=True,
-                                                 add_3d_cell_outline=False)
+                                                 add_3d_cell_outline= False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         if doindividualcalcs:
                             processes.append((t, w, r, fovno, obj_index, Cvolume,
@@ -366,7 +351,7 @@ if __name__ == "__main__":
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
-            # print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfpstackvols))}")
+            print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfpstackvols))}")
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
