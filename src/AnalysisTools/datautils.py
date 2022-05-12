@@ -9,8 +9,9 @@ from src.AnalysisTools import experimentalparams, types
 tn = 4
 """
 tn = 4 for TOM
+tn = 4 for FBL
 3 for LAMP
-4 for sec
+3 for sec
 """
 def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
                  len1: int = experimentalparams.USEDWEEKS):
@@ -214,7 +215,7 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
             if basedname == baseaname:
                 for Tf in GFPfnames:
                     baselname = "_".join(Tf.split("_")[:-tn])  # check
-                    baselname = baselname.replace("s2","") # temporary for lamp1
+                    # baselname = baselname.replace("s2","") # temporary for lamp1
                     # Tf = Tf.replace("s2","") # temporary for lamp1
                     if debug:
                         print("GFP:", baselname)

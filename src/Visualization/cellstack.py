@@ -1,6 +1,5 @@
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
-from aicsshparam import shparam, shtools
 from skimage.morphology import binary_dilation
 
 
@@ -44,19 +43,6 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_c
     return success
 
 
-def saveSHEsurfaces(stack3d, lmax=50):
-    stack3d = stack3d.data.astype(np.uint8)
-    stack3d = stack3d > 0
-    stack3d = stack3d.squeeze()
-    (coeffs, grid_rec), (image_, mesh, grid, centroid) = shparam.get_shcoeffs(image=stack3d, lmax=lmax)
-    mse = shtools.get_reconstruction_error(grid, grid_rec)
-
-    # Print results
-    print('Coefficients:', len(coeffs), coeffs)
-    print(coeffs.values())
-    print('Error:', mse)
-    pass
-
 
 def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
     from src.stackio import stackio
@@ -82,34 +68,31 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
 if __name__ == "__main__":
     # [cell, dna, gfp] = [np.random.random((20, 500, 500)) >= 0.4 for _ in range(3)]
     # mergestack(cell, dna, gfp, savename="test")
-    # Cellstackpath= "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/illustrations_TOM/P1-W2-SEC_G02_F004_Actin_RPE.tif"
-    # DNAstackpath= "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/illustrations_TOM/P1-W2-SEC_G02_F004_DNA_RPE.tif"
-    # GFPstackpath= "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/illustrations_TOM/P1-W2-SEC_G02_F004_0.625_0.075_GFP.tiff"
+
     from src.AnalysisTools import datautils, experimentalparams as ep
     from src.stackio import stackio
     from os.path import join
 
-    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LAMP1/'
-    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LAMP1/Cell/'
+    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LC3B/'
+    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LC3B/Cell/'
     dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
     actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
     GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
-    savename = "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/illustrations_LAMP/"
+    savename = 'C:/Users/satheps/PycharmProjects/Results/2022/Apr29/lc3b/illustrations_LC3B/imgs/'
     print(len(dnafnames), len(actinfnames),len(GFPfnames))
     dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
-                                                                                debug=True)
+                                                                                debug=False)
     # standard stacks
     ts = [0, 1]
-    rs = [0, 5]
-    fovnos = [0]
+    # rs = [0, 5]
+    rs = [1, 6]
+    fovnos = [5]
     for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
         week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
         t = ep.findtreatment(r)
-        # print(
-        #     f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
         if t in ts and r in rs and fovno in fovnos:
             print(
-                f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
+                f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
 
             Cellstackpath = join(segmented_ch_folder_Cell, actinfile)
             DNAstackpath = join(segmented_ch_folder_Cell, dnafile)

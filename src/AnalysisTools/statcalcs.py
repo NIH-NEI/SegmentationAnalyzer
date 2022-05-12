@@ -11,7 +11,6 @@ USEDWEEKS = ep.USEDWEEKS
 TREATMENT_TYPES = ep.TREATMENT_TYPES
 WS = ep.WS
 
-
 def removeoutliers3dlist(alldata, m: float = 2):
     """
     removes outliers outside of m standard deviations for 3D lists
@@ -71,6 +70,36 @@ def perctosd(percentile: float = 95.452):
     tail = percentile + (1 - percentile) / 2
     z_crit = norm.ppf(tail)
     return z_crit
+
+
+# def newmusigma(alldata, percentile):
+#     sigma = perctosd(percentile)
+#     data = alldata.copy()
+#     rmoutlierdata = rmoutliers(data, m=sigma)
+#     newmus = np.zeros((usedtreatments, usedweeks))
+#     newsigmas = np.zeros((usedtreatments, usedweeks))
+#     # for t, treatment in enumerate(treatment_type):
+#     #     for w, weekno in enumerate(ws[:usedweeks]):
+#     #         wtdata = rmoutlierdata[t][w]
+#     #         newmus[t,w] = np.mean(wtdata)
+#     #         newsigmas[t,w] = np.std(wtdata)
+#     return newmus, newsigmas
+
+
+def getmusigma(data):
+    sigma = np.nanstd(data)
+    mu = np.nanmean(data)
+    return mu, sigma
+
+
+def getmusigma2d(data):
+    d = data.reshape((ep.USEDTREATMENTS, ep.USEDWEEKS, -1))
+    mus = np.zeros((ep.USEDTREATMENTS, ep.USEDWEEKS))
+    sigmas = np.zeros((ep.USEDTREATMENTS, ep.USEDWEEKS))
+    for t in range(ep.USEDTREATMENTS):
+        for w in range(ep.USEDWEEKS):
+            mus[t, w], sigmas[t, w] = getmusigma(d[t, w, :])
+    return mus, sigmas
 
 
 def one_way_anova(listofarrays):

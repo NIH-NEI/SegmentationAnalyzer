@@ -3,22 +3,25 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor
 from os import mkdir
 from os.path import join, exists, isdir
-
+import click
 import numpy as np
 import pandas as pd
 from scipy.ndimage import find_objects  # ,label
-# from scipy.ndimage.measurements import label, find_objects
-from skimage.measure import label as skilbl
 
 # from src.stackio import metadataHandler as meta
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
 from src.Visualization import plotter, cellstack
 from src.stackio import stackio
+# TODO: remove in next iteration
+# from scipy.ndimage.measurements import label, find_objects
+# @click.command()
 
-if __name__ == "__main__":
+def runcode():
+    usesmallerset = False
     # Important: make sure this indent is maintained throughout
     doindividualcalcs = True
-    channel = "SEC61"
+    channel = "LC3B"
+    # channel = "LAMP1"
     ###############################################
     usedWs = experimentalparams.USEDWEEKS
     usedTs = experimentalparams.USEDTREATMENTS
@@ -31,17 +34,19 @@ if __name__ == "__main__":
     maxgfp_cell = experimentalparams.MAX_ORGANELLE_PER_CELL
     ###############################################
 
-    segmented_ch_folder = '../Results/2022/Mar4/channels/sec61b/segmented/'
-    savepath = '../Results/2022/Mar11/sec61b/results/'
+    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/'
+    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/Cell/csv/'
+    savepath = '../Results/2022/May6/cetn2/calcs/'
     savepathmeta = join(savepath, "meta")
-    assert exists(segmented_ch_folder)
+    assert exists(segmented_ch_folder_GFP)
+    assert exists(segmented_ch_folder_Cell)
     assert exists(savepath)
     if not exists(savepathmeta):
         mkdir(savepathmeta)
 
-    dnafnames = datautils.getFileListContainingString(segmented_ch_folder, 'DNA_RPE.tif')
-    actinfnames = datautils.getFileListContainingString(segmented_ch_folder, 'Actin_RPE.tif')
-    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder, '_GFP')
+    dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, '_DNA_RPE')
+    actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, '_Actin_RPE')
+    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
 
     dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
                                                                                 debug=False)
@@ -81,8 +86,7 @@ if __name__ == "__main__":
     dnastacksphericity = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackaspectratio2d = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
     dnastackvolfraction = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
-    dnastackinvaginationvfrac = np.nan * np.ones(
-        (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
+    dnastackinvaginationvfrac = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
 
     gfpstackvols = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell))
     gfpstackmeanvols = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells))
@@ -117,33 +121,25 @@ if __name__ == "__main__":
 
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = experimentalparams.findtreatment(r)
+            if usesmallerset:
+                uss_fovs = [0, 1]
+                uss_reps = [0, 1]  # will also do 5 and 6 respectively
+                if not (fovno in uss_fovs and r % 5 in uss_reps):
+                    print(f"Skipping {basename} since using a smaller set.")
+                    continue
             print(
                 f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
             if w < usedWs:
 
-                ##GET IMAGES
-                img_GFP = stackio.opensegmentedstack(join(segmented_ch_folder, GFPfile))
-                img_ACTIN = stackio.opensegmentedstack(join(segmented_ch_folder, actinfile))  # binary=False
-                img_DNA = stackio.opensegmentedstack(join(segmented_ch_folder, dnafile))  # binary=False
-                # assert np.unique(img_GFP)==np.unique(img_ACTIN)== np.unique(img_DNA)
-                assert img_GFP.shape == img_ACTIN.shape == img_DNA.shape
-                print("TEST: all unique values should be equal", np.unique(img_GFP), np.unique(img_ACTIN),
-                      np.unique(img_DNA))
-                print("TEST: all dimensions  should be equal", img_GFP.shape, img_ACTIN.shape, img_DNA.shape)
-                # imwrite(f'{savepath}{basename}_GFP.tiff', IMGGFP_0, compress=6)
-                # imwrite(f'{savepath}{basename}_Actin.tiff', IMGactin, compress=6)
-                # imwrite(f'{savepath}{basename}_DNA.tiff', IMGDNA, compress=6)
+                ##GET LABELLED IMAGES
+                GFPfilepath = join(segmented_ch_folder_GFP, GFPfile)
+                Actinfilepath = join(segmented_ch_folder_Cell, actinfile)
+                DNAfilepath = join(segmented_ch_folder_Cell, dnafile)
+                labelactin, labeldna = stackio.read_get_labelledstacks(Actinfilepath, DNAfilepath)
+                img_GFP = stackio.opensegmentedstack(GFPfilepath)
 
-                # actin_label, icellcounts = label(img_ACTIN)
-                # NOTE: default structuring element is full for skimage = ndim and for scipy = 1
-                # obj_df = pd.DataFrame(np.arange(1, icellcounts + 1, 1), columns=['object_index'])
-                # imwrite(f'{savepath}{basename}_labelactin_skimage.tiff', labelactin, compress=6)
-                # imwrite(f'{savepath}{basename}_labelactin_scipy.tiff', actin_label, compress=6)
+                assert img_GFP.shape == labelactin.shape == labeldna.shape, f"{img_GFP.shape},{labelactin.shape},{labeldna.shape}"
 
-                labelactin, icellcounts = skilbl(img_ACTIN, return_num=True)
-                labeldna = skilbl(img_DNA)
-                labelGFP = skilbl(img_GFP)
-                # create variables
                 is_ = list(np.unique(labelactin))
                 js_ = list(np.unique(labeldna))
                 is_.remove(0)
@@ -188,7 +184,8 @@ if __name__ == "__main__":
                 # pd.DataFrame(dna_actin_membership).to_csv(savepath+"dnamem.csv")
                 ##Now the calculation with membership data
 
-                obj_df = pd.DataFrame(np.arange(1, icellcounts + 1, 1), columns=['object_index'])
+                # len(is_) should be the same as unique cells +1
+                obj_df = pd.DataFrame(np.arange(1, len(is_) + 1, 1), columns=['object_index'])
                 for index, row in obj_df.iterrows():
                     cellinputdict = {}
                     obj_index = int(row['object_index'])
@@ -217,9 +214,9 @@ if __name__ == "__main__":
                         cell_cstack = 255 * ((labelactin == index) > 0)
                         # dna_cstack = None
                         # gfp_cstack = None
-                        if no_members > 0:
+                        if no_members >= 0:  # include cells with no nuclei
                             # if False:  # decide condition
-                                # savethisimage = True
+                            # savethisimage = True
                             cellstackvols[t, w, 0, r % 5, fovno, obj_index] = Cvolume
                             cellstackxspan[t, w, 0, r % 5, fovno, obj_index] = Cxspan
                             cellstackyspan[t, w, 0, r % 5, fovno, obj_index] = Cyspan
@@ -268,7 +265,6 @@ if __name__ == "__main__":
                                 else:
                                     usememberdnaid = memberdna_no
 
-
                                 dnastackcentroids[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dcentroid
                                 dnastackvols[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dvolume
                                 dnastackxspan[t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dxspan
@@ -286,7 +282,7 @@ if __name__ == "__main__":
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)
 
-                        saveindividualcellstack = (np.random.random(1)[0] < 0.1) #10% sample ~~is_//10
+                        saveindividualcellstack = (np.random.random(1)[0] < 0.05)  # 10% sample ~~is_//10
                         # saveindividualcellstack = True  # 10% sample ~~is_//10
                         if saveindividualcellstack:
                             cellstackfolder = join(savepath, 'cellstacks').replace("\\", "/")
@@ -295,7 +291,7 @@ if __name__ == "__main__":
                             stackfilename = f"{channel}_{basename}_{obj_index}"
                             cellstack.mergestack(CellObject, DNAObjects, GFPObjects,
                                                  savename=join(cellstackfolder, stackfilename), save=True,
-                                                 add_3d_cell_outline= False)
+                                                 add_3d_cell_outline=False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         if doindividualcalcs:
                             processes.append((t, w, r, fovno, obj_index, Cvolume,
@@ -351,7 +347,7 @@ if __name__ == "__main__":
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
-            print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfpstackvols))}")
+            # print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfpstackvols))}")
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
@@ -406,3 +402,7 @@ if __name__ == "__main__":
                                             savesigma=True, selected_method_type=None, uselog=uselog[o])
             except Exception as e:
                 print(e)
+
+
+if __name__ == "__main__":
+    runcode()

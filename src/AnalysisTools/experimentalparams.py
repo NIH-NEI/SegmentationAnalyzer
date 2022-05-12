@@ -14,13 +14,13 @@ AREASCALE = XSCALE * YSCALE
 
 MAX_CELLS_PER_STACK = 1000
 MAX_DNA_PER_CELL = 2
-MAX_ORGANELLE_PER_CELL = 200  # TENTATIVE on channel
+MAX_ORGANELLE_PER_CELL = 250  # TENTATIVE on channel
 """
 MAX_ORGANELLE_PER_CELL
 used:
 100 for TOM
 200 for Lamp1
-200 for Sec
+250 for Sec
 """
 
 TIMEPOINTS_PER_STACK = 1
@@ -129,8 +129,6 @@ def findrep(filename, _alphabets=None):
         return int(all_reps[0][1:]) - 2
 
 
-#     return all_reps[0]
-
 def getusedchannels(filelist):
     channels = []
     for file in filelist:
@@ -186,7 +184,6 @@ def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
 
 class channel():
     def __init__(self, inputchannelname=None):
-        # TODO: refactor to static
         self.allchannelnames = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
                                 "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
                                 "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]
@@ -277,18 +274,18 @@ class channel():
             "tuba1b": 4,
             "lmnb1": 4,
             "fbl": 4,
-            "actb": 4,
-            "dsp": 4,
+            "actb": 0,
+            "dsp": 0,
             "lamp1": 4,
             "tjp1": 4,
-            "myh10": 4,
+            "myh10": 0,
             "st6gal1": 4,
             "lc3b": 4,
             "cetn2": 4,
-            "slc25a17": 4,
+            "slc25a17": 0,
             "rab5": 4,
-            "gja1": 4,
-            "ctnnb1": 4
+            "gja1": 0,
+            "ctnnb1": 0
         }
         self.directory = None
 

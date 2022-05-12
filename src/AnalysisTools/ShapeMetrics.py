@@ -73,13 +73,16 @@ def orientation_3D(bboximage):
     return [r, theta, phi]
 
 
-def calculate_object_properties(bboxdata, usephull=False, debug=False,gfp=False):
+def calculate_object_properties(bboxdata, usephull=False, debug=False, small_organelle=False):
     """
     Does calculations for True voxels within a bounding box provided in input. Using the selected
     area reduces calculation time required. Calculations are done for spans along X, Y and Z axes.
     Maximum and minimum feret lengths, centroid coordinates and volume.
 
     :param bboxdata: 3D data in region of interest (bounding box)
+    :param usephull: Use pseudo hull for rotation based calculations instead of the entire object
+    :param debug: use when debugging
+    :param small_organelle: is channel gfp?
     :return:centroid, volume, xspan, yspan, zspan, maxferet, minferet measurements
     """
     bboxdatabw = (bboxdata > 0)
@@ -100,7 +103,7 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False,gfp=False)
             proj2dshadow = np.any(bboxdatabw, axis=0)
             miparea = np.count_nonzero(proj2dshadow) * AREASCALE
             # if (zspan>ZSCALE) and (xspan>XSCALE) and (yspan>YSCALE):
-            if not gfp:
+            if not small_organelle:
                 try:
                     sphericity = getsphericity(bboxdatabw, volume)
                 except:
@@ -126,10 +129,6 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False,gfp=False)
 
 
 def getsphericity(bboxdata, volume):
-    # bboxdata = bboxdata.astype(np.uint8)
-    # strel = np.ones((3,3,3))
-    # eroded_image = binary_erosion(bboxdata, strel, border_value=0)
-    # border_image = bboxdata - eroded_image
     bboxdata = bboxdata.squeeze()
     # assert bboxdata.ndim == 3, f"sphericity inputs must be 3 dimensional, currently: {bboxdata.ndim} dimensional"
     assert bboxdata.ndim == 3
@@ -147,23 +146,35 @@ def organellecentroid_samerefframe(bboxdata):
 def calculate_multiorganelle_properties(bboxdata, cell_centroid):
     """
     Note: Dimension must be in the order: z,x,y
+    feature measurements for individual organelles (within a masked cell)
 
     :param bboxdata: 3D data in region of interest
     :return:
     :param centroids: center of mass (with all voxels weighted equally) giving the geometric centroid.
     :param volumes: volume in pixels of each organelle
-    :param xspans:
-    :param yspans:
-    :param zspans:
-    :param maxferets:
-    :param minferets:
-    :param mipareas:
-    :param orientation3D:
-    :param z_distributions:
-    :param radial_distribution2ds:
-    :param radial_distribution3ds:
 
-    measurements for individual organelles
+
+    :param bboxdata:
+    :param cell_centroid:
+    :return:
+    Returns the following metrics
+    :param organellecounts
+    :param centroids
+    :param volumes
+    :param xspans
+    :param yspans
+    :param zspans
+    :param maxferets
+    :param meanferets
+    :param minferets
+    :param mipareas
+    :param orientations3D
+    :param z_distributions
+    :param radial_distribution2ds
+    :param radial_distribution3ds
+    :param meanvolume
+
+
     """
     mno = ep.MAX_ORGANELLE_PER_CELL
     # mno = 1 # temporary
@@ -186,7 +197,8 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             bboxcrop = find_objects(organelle_obj)
             gfpslices = bboxcrop[0]  # slices for gfp channel
             # All properties obtained from calcs are already scaled
-            _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(organelle_obj[gfpslices],gfp=True)
+            _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(organelle_obj[gfpslices],
+                                                                                                                    small_organelle=True)
             # distribution calculations
             centroid_rel = organellecentroid_samerefframe(organelle_obj) # centroid location needs to be relative to the cell based slices
             gfp_c_rel = centroid_rel - cell_centroid
@@ -210,17 +222,6 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             radial_distribution3ds[index] = radial_distribution3d
             orientations3D[index, :] = np.array(orientation3D)
 
-            # print(z_dist, radial_distribution2d, radial_distribution3d, orientation3D, volume)
-            # print(np.count_nonzero(~np.isnan(z_distributions)), np.count_nonzero(~np.isnan(radial_distribution2ds)),
-            #       np.count_nonzero(~np.isnan(radial_distribution3ds)), np.count_nonzero(~np.isnan(orientations3D)),
-            #       np.count_nonzero(~np.isnan(volumes)), np.count_nonzero(~np.isnan(xspan)), np.count_nonzero(~np.isnan(miparea)))
-            # exit()
-            # z_distributions = np.asarray(z_distributions)
-            # radial_distribution2ds = np.asarray(radial_distribution2ds)
-            # radial_distribution3ds = np.asarray(radial_distribution3ds)
-            # print(orientations3D.shape)
-            # print("EXITING TEST")
-            # exit()
 
         else:
             print(f"more than {mno} organelles found: {organellecounts}")

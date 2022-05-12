@@ -12,14 +12,8 @@ from src.AnalysisTools import experimentalparams as ep
 from src.Visualization import plotter
 
 
-# filename = f"{otype}_{propnames[i]}_{strsigma}.npz"
-# calcfolder = '../Results/2022/Jan21/TOM_stack_18img/segmented/calcs/'
-# savefolder = '../Results/2022/Jan21/TOM_stack_18img/segmented/plots/'
-# calcfolder = '../Results/2022/Jan28/TOM/testset_thr/'
-# calcfolder =  '../Results/2022/Feb4/TOM/all/'
 
-
-def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, strsigma, logplot):
+def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, strsigma, logplot, vplot= True, pplot = False):
     properties3d = ["Centroid", "Orientation"]
     centroiddims = ["Z", "X", "Y"]
     orientationdims = ["r", "\u03B8 (theta)", "\u03C6 (phi)"]
@@ -36,27 +30,27 @@ def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, strsig
             dimstackdata = stackdata[..., pid]
             units = f"{unitsbydim[propid][pid]}"
             print(f"Plotting {propertyname} {pid}: {dimpropertyname}:{dimstackdata.shape}")
-            plotter.violinstripplot(stackdata=dimstackdata, channel=organelletype, propname=dimpropertyname,
-                                    units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
+            if vplot:
+                plotter.violinstripplot(stackdata=dimstackdata, channel=organelletype, propname=dimpropertyname,
+                                        units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
+            if pplot:
+                plotter.stdboxplot(stackdata=dimstackdata, channel=organelletype, propname=dimpropertyname,
+                               units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
 
     else:
         units = ep.getunits(propertyname)
-        plotter.violinstripplot(stackdata=stackdata, channel=organelletype, propname=propertyname,
+        if vplot:
+            plotter.violinstripplot(stackdata=stackdata, channel=organelletype, propname=propertyname,
                                 units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
+        if pplot:
+            plotter.stdboxplot(stackdata=stackdata, channel=organelletype, propname=propertyname,
+                           units=units, savepath=savefolder, savesigma=strsigma, uselog=logplot)
 
 
 def loadandplot(calcfolder='../Results/2022/Feb4/TOM/newpropstest_add1/',
                 savefolder='../Results/2022/Feb4/TOM/newpropstest_add1/plots/', sigma=None):
-    # calcfolder = '../Results/2022/Mar25/TOM/calcs/'
-    # calcfolder = '../Results/2022/Mar25/SEC61/calcs/'
-    calcfolder = '../Results/2022/Apr1/LAMP1/calcs/'
-    # calcfolder = '../Results/2022/Mar11/sec61b/results/'
-
-    # calcfolder = '../Results/2022/Feb18/TOM/results_all/npz/'
-    # calcfolder = '../Results/2022/Mar4/channels/lamp1/results/'
-    # savefolder = '../Results/2022/Mar11/TOM/fc_allstacks/plots/'
-    savefolder = '../Results/2022/Apr1/LAMP1/plots/'
-    # savefolder = '../Results/2022/Mar4/channels/lamp1/plots/'
+    calcfolder = '../Results/2022/May6/cetn2/calcs/'
+    savefolder = '../Results/2022/May6/cetn2/plots/'
 
     files = os.listdir(calcfolder)
     datafiles = [f for f in files if isfile(join(calcfolder, f)) if f.__contains__('.npz')]
@@ -74,6 +68,8 @@ def loadandplot(calcfolder='../Results/2022/Feb4/TOM/newpropstest_add1/',
             # stackdata = loadedfile[loadedfile.files[0]]
             # print(datafile)
             # if not propertyname.__contains__("Volume"):
+            #     continue
+            # if not organelletype.__contains__("Cell"):
             #     continue
             print(GFPchannel, organelletype, propertyname, float(strsigma))
             print(stackdata.shape, len(np.unique(stackdata)), np.count_nonzero(~np.isnan(stackdata)))
@@ -95,4 +91,4 @@ def loadandplot(calcfolder='../Results/2022/Feb4/TOM/newpropstest_add1/',
 if __name__ == "__main__":
     print("in main")
     loadandplot()
-# add arguments based approach
+# TODO: add argparser

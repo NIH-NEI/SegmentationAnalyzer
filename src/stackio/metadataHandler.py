@@ -73,11 +73,11 @@ def readCellMetadata(jsonfile):
 
 
 def parsejson(info):
-    vol = info['volume'] * experimentalparams.VOLUMESCALE
-    xspan = info['xspan'] * experimentalparams.XSCALE
-    yspan = info['yspan'] * experimentalparams.YSCALE
-    zspan = info['zspan'] * experimentalparams.ZSCALE
-    miparea = info['mip_area'] * experimentalparams.AREASCALE
+    vol = info['volume'] * ep.VOLUMESCALE
+    xspan = info['xspan'] * ep.XSCALE
+    yspan = info['yspan'] * ep.YSCALE
+    zspan = info['zspan'] * ep.ZSCALE
+    miparea = info['mip_area'] * ep.AREASCALE
     tag = info['edgetag']
     top, bot = 0, 0
     #     print(tag,end =" ")
