@@ -73,19 +73,19 @@ if __name__ == "__main__":
     from src.stackio import stackio
     from os.path import join
 
-    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LC3B/'
-    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/LC3B/Cell/'
+    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/'
+    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/Cell/'
     dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
     actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
     GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
-    savename = 'C:/Users/satheps/PycharmProjects/Results/2022/Apr29/lc3b/illustrations_LC3B/imgs/'
+    savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
     print(len(dnafnames), len(actinfnames),len(GFPfnames))
     dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
                                                                                 debug=False)
     # standard stacks
     ts = [0, 1]
-    # rs = [0, 5]
-    rs = [1, 6]
+    rs = [0, 5]
+    # rs = [1, 6]
     fovnos = [5]
     for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
         week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)

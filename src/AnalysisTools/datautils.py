@@ -6,13 +6,15 @@ import pandas as pd
 
 from src.AnalysisTools import experimentalparams, types
 
-tn = 4
+# tn = 4
 """
 tn = 4 for TOM
 tn = 4 for FBL
 3 for LAMP
 3 for sec
 """
+
+
 def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
                  len1: int = experimentalparams.USEDWEEKS):
     """
@@ -214,18 +216,19 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                 print("ACTIN:", baseaname)
             if basedname == baseaname:
                 for Tf in GFPfnames:
-                    baselname = "_".join(Tf.split("_")[:-tn])  # check
-                    # baselname = baselname.replace("s2","") # temporary for lamp1
-                    # Tf = Tf.replace("s2","") # temporary for lamp1
+                    ############################# temporary for inlcuding lamp1 case  TODO:simplify in final version
+                    Tftemp = Tf
+                    if Tf.__contains__("s2") and not Tf.__contains__("_s2"):
+                        Tftemp = Tf.replace("s2", "_s2")
+                    baselname = "_".join(Tftemp.split("_")[:3])  # check
+                    ############################# temporary for inlcuding lamp1 case  TODO:simplify in final version
                     if debug:
                         print("GFP:", baselname)
                     if basedname == baselname:
                         dnafiles.append(df)
                         actinfiles.append(af)
                         GFPfiles.append(Tf)
-                        baseaname = ""
-                        basedname = ""
-                        baselname = ""
+                        baseaname, basedname, baselname = "", "", ""
                         break
 
     no_dnafiles = len(dnafiles)
@@ -248,18 +251,18 @@ def getwr_3channel(df, af, lf, debug=False):
     """
     # print(lf)
     # exit()
-    lf = lf.replace("s2","") # NOTE: temporary for lamp1
+    lf = lf.replace("s2", "")  # NOTE: temporary for lamp1
     basestringdna = "_".join(df.split("_")[:-2])
     basestringactin = "_".join(af.split("_")[:-2])
-    basesstringgfp = "_".join(lf.split("_")[:-tn])
+    basesstringgfp = "_".join(lf.split("_")[:3])
     if debug:
         print(basestringdna, basestringactin, basesstringgfp)
     assert basestringdna == basestringactin == basesstringgfp, f"unequal string lengths {basesstringgfp}, {basestringdna}, {basestringactin}"
     s1, r, fov = basestringdna.split("_")
     w = s1.split("-")[1]
     w_ = experimentalparams.WS.index(w)
-    r_ = int(r[1:]) - 2 # r goes from 2 to 11 - change it to 0-9
-    fov_ = int(fov[-1:]) - 1 # fov goes from 1 to 6 - change it to 0-5
+    r_ = int(r[1:]) - 2  # r goes from 2 to 11 - change it to 0-9
+    fov_ = int(fov[-1:]) - 1  # fov goes from 1 to 6 - change it to 0-5
     return w, r, w_, r_, fov, fov_, basestringdna
 
 

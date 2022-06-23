@@ -119,6 +119,7 @@ def kstest(listofarrays):
         ksstat, kspvalue = ks_2samp(*listofarrays)
     except Exception as e:
         ksstat, kspvalue = np.nan, np.nan
+        print("listofarrays: ", listofarrays)
         logging.warning("KStest exception:", e)
     return ksstat, kspvalue
 

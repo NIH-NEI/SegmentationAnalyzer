@@ -113,7 +113,7 @@ def stat_tests(stack, savepath="", channel="", propertyname="", percentile=90, g
         # chisq, pvalue_chisq = statcalcs.chisquaretest(weeklist)
         # chisq_ps_treatmentwise.append(pvalue_chisq)
         # chisq_fs_treatmentwise.append(chisq)
-
+        print("weeklist: ", len(weeklist[0]), len(weeklist[1]))
         fvalue_ks, pvalue_ks = statcalcs.kstest(weeklist)
         ks_ps_treatmentwise.append(pvalue_ks)
         ks_fs_treatmentwise.append(fvalue_ks)
@@ -147,8 +147,9 @@ def stat_tests(stack, savepath="", channel="", propertyname="", percentile=90, g
                       percentile=percentile, stattype=['f-value', 'p-value'], commonparameter="weeks")
 
 
-def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=None, selected_method_type=None,
-                    savepath="", withstrpplt=True, scaletype="count", uselog=False, statplots=True):
+def violinstripplot(stackdata, channel="Cell", propname="", units="", percentile_include=None,
+                    selected_method_type=None, savepath="", withstrpplt=True, scaletype="count",
+                    uselog=False, statplots=True, keep_outliers=False):
     """
         scaletype can be count, width or area
 
@@ -156,7 +157,7 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
         :param channel:
         :param propname:
         :param units:
-        :param savesigma:
+        :param percentile_include:
         :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
         :param savepath:
         :param withstrpplt:
@@ -165,7 +166,7 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
         :param statplots:
         :return:
         """
-    withoutliers = True
+    # withoutliers = False
     method_types = ["Individual", "Stackwise", "Platewise"]
     useall = False
     if selected_method_type == None:
@@ -177,13 +178,22 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
     stackdata_indiv = statcalcs.stackbyabstractionlevel(stackdata, abstraction=0)
     stackdata_stack = statcalcs.stackbyabstractionlevel(stackdata, abstraction=1)
     stackdata_well = statcalcs.stackbyabstractionlevel(stackdata, abstraction=2)
+    originaldata = [stackdata_indiv, stackdata_stack, stackdata_well]
+    if uselog:
+        originaldata = [np.log10(stackdata_indiv), np.log10(stackdata_stack), np.log10(stackdata_well)]
 
-    stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=2, abstraction=0)
-    stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=2, abstraction=1)
-    stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=2, abstraction=2)
+    sigma = statcalcs.perctosd(percentile_include)
+    print(f"Sigma:{sigma}")
+    stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=0)
+    stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=1)
+    stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=2)
 
-    print(
-        f"{np.count_nonzero(~np.isnan(stackdata))}, {np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv))},{np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack))}, {np.count_nonzero(~np.isnan(stackdata_rmoutlier_well))}")
+    print(f"stackdata, rmind, rmstack, rwell"
+        f"{np.count_nonzero(~np.isnan(stackdata))}, "
+        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv))},"
+        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack))}, "
+        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_well))}")
+
     ####################################################################################################
     if uselog:
         stackdata_rmoutlier_indiv = np.log10(stackdata_rmoutlier_indiv)
@@ -196,11 +206,12 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
         welllogmin, welllogmax = returnlogbounds(stackdata_rmoutlier_well)
         logmins = [indivlogmin, stacklogmin, welllogmin]
         logmaxes = [indivlogmax, stacklogmax, welllogmax]
+        print("logmins, logmaxes:", logmins, logmaxes)
     ####################################################################################################
 
-    originaldata = [stackdata_indiv, stackdata_stack, stackdata_well]
     rmoutlierdata = [stackdata_rmoutlier_indiv, stackdata_rmoutlier_stack, stackdata_rmoutlier_well]
-    if withoutliers:
+    if keep_outliers:
+        print("keeping outliers")
         usedata = originaldata
     else:
         usedata = rmoutlierdata
@@ -224,18 +235,19 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
             try:
 
                 datacount = np.count_nonzero(~np.isnan(rmoutlierdata[m]))
-                alpha = min(1, max(4000 / datacount, 0.01))
-                gridsize = min(100, datacount)
+                alpha = 1
+                gridsize = 100
+                if datacount:
+                    alpha = min(1, max(4000 / datacount, 0.01))
+                    gridsize = min(100, datacount)
                 if datacount < 100:
                     linewidth = 1
-                logging.info("plotinfo", selected_method_type, useall, datacount, alpha, gridsize, linewidth,
-                             flush=True)
+                logging.info("plotinfo", selected_method_type, useall, datacount, alpha, gridsize, linewidth)
             except:
                 alpha = 1
                 gridsize = 100
                 logging.warning("plotinfo exception:", selected_method_type, useall, datacount, alpha, gridsize,
-                                linewidth,
-                                flush=True)
+                                linewidth)
             if statplots and not uselog:
                 # test for statistical null hypothesis
                 try:
@@ -255,30 +267,37 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", savesigma=
                         boxprops={'facecolor': 'None', "zorder": 10}, whiskerprops={"zorder": 10}, hue="Treatment",
                         showfliers=False, dodge=1.1)
             handles, labels = vp.get_legend_handles_labels()
+            plt.setp(vp.get_legend().get_texts(), fontsize='40')
             axs.legend(handles[:0], labels[:0])
-            axs.set_title(f"{channel}  {propname} ({method})", fontsize=24)
+            axs.set_title(f"{channel}  {propname} ({method})", fontsize=32)
 
             l = plt.legend(handles[0:2], labels[0:2], bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
             # for ax in axs:
             axs.yaxis.grid(True)
-            axs.set_xlabel('Weeks', fontsize=18)
+            axs.set_xlabel('Weeks', fontsize=24)
+            # plt.setp(axs, xticks=[week for week in range(experimentalparams.USEDWEEKS)],
+            #          xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
+            axs.xaxis.set_ticks([week for week in range(experimentalparams.USEDWEEKS)], fontsize=18)
+            axs.xaxis.set_ticklabels(experimentalparams.WS[:experimentalparams.USEDWEEKS])
+            axs.set_ylabel(f"{channel} {propname}{unitstext}", fontsize=24)
+
             if uselog:
                 from matplotlib import ticker as mticker
-                axs.yaxis.set_ticks([np.log10(x) for p in range(logmins[m], logmaxes[m]) for x in
-                                     np.linspace(10 ** p, 10 ** (p + 1), 5)], minor=True)
+                # axs.yaxis.set_ticks([p for p in range(logmins[m], logmaxes[m])], minor=True)
+                axs.yaxis.set_ticks([np.log10(x) for p in range(logmins[m], logmaxes[m] + 2) for x in
+                                     np.linspace(10 ** p, 10 ** (p + 1), 10)], minor=True)
+                axs.yaxis.set_ticks([p for p in range(logmins[m], logmaxes[m] + 2)])
                 axs.yaxis.set_major_formatter(mticker.StrMethodFormatter("$10^{{{x:.2f}}}$"))
-
-            axs.set_ylabel(f"{channel} {propname}{unitstext}", fontsize=18)
-            plt.setp(axs, xticks=[week for week in range(experimentalparams.USEDWEEKS)],
-                     xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
+                # axs.yaxis.set_minor_formatter(mticker.StrMethodFormatter("$10^{{{x:.2f}}}$"))
+                # axs.set_ylim([logmins[m], logmaxes[m] + 1])
             plt.savefig(
-                f"{savepath}{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
+                f"{savepath}{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(percentile_include) if percentile_include else ''}.png")
             plt.close()
             plt.clf()
 
 
-def stdboxplot(stackdata, channel="Cell", propname="", units="", savesigma=None, selected_method_type=None,
+def stdboxplot(stackdata, channel="Cell", propname="", units="", percentile_include=None, selected_method_type=None,
                savepath="", withstrpplt=False, uselog=False, statplots=False):
     """
         scaletype can be count, width or area
@@ -287,7 +306,7 @@ def stdboxplot(stackdata, channel="Cell", propname="", units="", savesigma=None,
         :param channel:
         :param propname:
         :param units:
-        :param savesigma:
+        :param percentile_include:
         :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
         :param savepath:
         :param withstrpplt:
@@ -310,9 +329,10 @@ def stdboxplot(stackdata, channel="Cell", propname="", units="", savesigma=None,
     stackdata_stack = statcalcs.stackbyabstractionlevel(stackdata, abstraction=1)
     stackdata_well = statcalcs.stackbyabstractionlevel(stackdata, abstraction=2)
 
-    stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=2, abstraction=0)
-    stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=2, abstraction=1)
-    stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=2, abstraction=2)
+    sigma = statcalcs.perctosd(percentile_include)
+    stackdata_rmoutlier_indiv = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=0)
+    stackdata_rmoutlier_stack = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=1)
+    stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=2)
 
     print(
         f"{np.count_nonzero(~np.isnan(stackdata))}, {np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv))},{np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack))}, {np.count_nonzero(~np.isnan(stackdata_rmoutlier_well))}")
@@ -358,18 +378,17 @@ def stdboxplot(stackdata, channel="Cell", propname="", units="", savesigma=None,
                 gridsize = min(100, datacount)
                 if datacount < 100:
                     linewidth = 1
-                logging.info("plotinfo", selected_method_type, useall, datacount, alpha, gridsize, linewidth,
-                             flush=True)
+                logging.info("plotinfo", selected_method_type, useall, datacount, alpha, gridsize, linewidth)
             except:
                 alpha = 1
                 gridsize = 100
                 logging.warning("plotinfo exception:", selected_method_type, useall, datacount, alpha, gridsize,
-                                linewidth,
-                                flush=True)
+                                linewidth)
             if statplots and not uselog:
                 # test for statistical null hypothesis
                 try:
-                    stat_tests(usedata[m], savepath=savepath, channel=channel, propertyname=f"{propname} ({method})")
+                    stat_tests(usedata[m], savepath=savepath, channel=channel, percentile=percentile_include,
+                               propertyname=f"{propname} ({method})")
                 except Exception as e:
                     logging.warning("statexception", e)
             fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))  # , sharey=True)
@@ -404,7 +423,7 @@ def stdboxplot(stackdata, channel="Cell", propname="", units="", savesigma=None,
             plt.setp(axs, xticks=[week for week in range(experimentalparams.USEDWEEKS)],
                      xticklabels=experimentalparams.WS[:experimentalparams.USEDWEEKS])
             plt.savefig(
-                f"{savepath}pplot_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(savesigma) if savesigma else ''}.png")
+                f"{savepath}pplot_{channel}_{propname}_{method}_weeks{experimentalparams.USEDWEEKS}_{'withstrpplt' if withstrpplt else ''}{'_log' if uselog else ''}{'_s-' + str(percentile_include) if percentile_include else ''}.png")
             plt.close()
             plt.clf()
 
@@ -421,4 +440,4 @@ if __name__ == "__main__":
 
     print(teststack.shape, teststack.ndim)
     violinstripplot(stackdata=teststack, channel="example channel", propname="some property",
-                    units="", savepath="", savesigma="99", uselog=False)
+                    units="", savepath="", percentile_include="99", uselog=False)
