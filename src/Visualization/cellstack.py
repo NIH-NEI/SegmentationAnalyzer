@@ -72,30 +72,41 @@ if __name__ == "__main__":
     from src.AnalysisTools import datautils, experimentalparams as ep
     from src.stackio import stackio
     from os.path import join
+    import os
+    segmentpath ="C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/"
+    savepathdir = "C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/"
+    chlist = os.listdir(segmentpath)
 
-    segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/'
-    segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/Cell/'
-    dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
-    actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
-    GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
-    savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
-    print(len(dnafnames), len(actinfnames),len(GFPfnames))
-    dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
-                                                                                debug=False)
-    # standard stacks
-    ts = [0, 1]
-    rs = [0, 5]
-    # rs = [1, 6]
-    fovnos = [5]
-    for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
-        week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
-        t = ep.findtreatment(r)
-        if t in ts and r in rs and fovno in fovnos:
-            print(
-                f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
+    print(chlist)
 
-            Cellstackpath = join(segmented_ch_folder_Cell, actinfile)
-            DNAstackpath = join(segmented_ch_folder_Cell, dnafile)
-            GFPstackpath = join(segmented_ch_folder_GFP, GFPfile)
-            savepath = join(savename, basename)
-            merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath)
+    # exit()
+    for ch in chlist:
+        segmented_ch_folder_GFP = f'{segmentpath}{ch}/'
+        segmented_ch_folder_Cell = f'{segmentpath}{ch}/Cell/'
+        dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
+        actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
+        GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
+        # savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
+        savename = f'{savepathdir}{ch}/imgs/'
+        if not os.path.exists(savename):
+            os.mkdir(savename)
+        print(len(dnafnames), len(actinfnames),len(GFPfnames))
+        dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
+                                                                                    debug=False)
+        # standard stacks
+        ts = [0, 1]
+        rs = [0, 5]
+        # rs = [1, 6]
+        fovnos = [5]
+        for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
+            week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
+            t = ep.findtreatment(r)
+            if t in ts and r in rs and fovno in fovnos:
+                print(
+                    f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
+
+                Cellstackpath = join(segmented_ch_folder_Cell, actinfile)
+                DNAstackpath = join(segmented_ch_folder_Cell, dnafile)
+                GFPstackpath = join(segmented_ch_folder_GFP, GFPfile)
+                savepath = join(savename, basename)
+                merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath)

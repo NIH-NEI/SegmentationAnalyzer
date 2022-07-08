@@ -129,7 +129,6 @@ def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Propert
 
 def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
     """
-    TODO: confirm for individual data
     :param stackdata: data divided into stacks
     :param propertyname: name of property
     :param useboolean:
@@ -190,7 +189,6 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
     """
     returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is
     robust to any unintentional shuffling of files.
-    TODO: Finalize indices when segmentation final versions are ready.
 
     :param dnafnames: list of filenames - DNA Channel.
     :param actinfnames: list of filenames - Actin Channel.
@@ -249,8 +247,7 @@ def getwr_3channel(df, af, lf, debug=False):
     :param lf: gfp_channel_filenames
     :return: week id, replicate id, week no. replicate number, common base string
     """
-    # print(lf)
-    # exit()
+
     lf = lf.replace("s2", "")  # NOTE: temporary for lamp1
     basestringdna = "_".join(df.split("_")[:-2])
     basestringactin = "_".join(af.split("_")[:-2])
