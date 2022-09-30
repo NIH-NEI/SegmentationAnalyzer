@@ -1,5 +1,6 @@
 import json
 import pickle
+import time
 import traceback
 
 import numpy as np
@@ -43,7 +44,10 @@ def opensegmentedstack(name: types.PathLike, whiteonblack: types.SegmentationLik
             seg = AICSImage(name)
             if whiteonblack == "default":
                 whiteonblack = True
-            seg = 1 * (seg.data > 0)
+            if whiteonblack == True:
+                seg = 1 * (seg.data > 0)
+            else:
+                seg = (1 - 1 * (seg.data > 0))
         else:
             seg = imread(name)
             # print(type(seg), seg.shape)
@@ -60,7 +64,8 @@ def opensegmentedstack(name: types.PathLike, whiteonblack: types.SegmentationLik
     except Exception as e:
         print(e, traceback.format_exc())
 
-def getlabelledstack(img, debug= False):
+
+def getlabelledstack(img, debug=False):
     """
     If stack has only two values (foreground and background), attempts to generate instance labels and returns labelled
     image. Do not put this in recursion.
@@ -77,6 +82,7 @@ def getlabelledstack(img, debug= False):
     else:
         lblimg = img.copy()
     return lblimg
+
 
 def read_get_labelledstacks(Actinfilepath, DNAfilepath, debug=False):
     """
@@ -199,57 +205,148 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
     :return:
     """
     import os
+    files = os.listdir(npzfolderpath)
     datafiles = [join(npzfolderpath, f) for f in files if isfile(join(npzfolderpath, f)) if f.__contains__('.npz')]
-
     # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
     isconverted = False
     array3ddfs = None
     firstloop = True
     if totype == "csv":
-        for datafile in datafiles:
-            GFPchannel, organelletype, propertyname, strsigma = datafile[:-4].split("/")[-1].split("_")
-            if organelletype == organelle:
-                print(datafile, ":::", GFPchannel, organelletype, propertyname, strsigma)
-                loadedstackdata = loadproperty(datafile)
-                array3ddf = datautils.generateindexeddataframe(loadedstackdata, propertyname)
-                # print(array3ddf)
-                if firstloop:
-                    array3ddfs = array3ddf.copy()
-                    firstloop = False
-                else:
-                    newpropcol = list(array3ddf.columns)[-1]
-                    print(newpropcol)
-                    if newpropcol == "Centroid":  # ignore centroid for now
-                        continue
-                    else:
-                        array3ddfs[newpropcol] = array3ddf[newpropcol]
-                # print(type(list(array3ddf.columns)[-1]))
-        # print(array3ddfs)
-        # exit()
-        if save:
-            print(f"saving as {totype}")
-            csvfilename = f"{GFPchannel}_{organelle}.csv"
-            csvpath = os.path.join(targetdir, csvfilename)
-            check = array3ddfs.to_csv(csvpath)
-        else:
-            return array3ddfs  # TODO : Support for merging various properties in one file
-        if check is None:
-            isconverted = True
+        try:
+            for datafile in datafiles:
+                GFPchannel, organelletype, propertyname, strsigma = datafile[:-4].split("/")[-1].split("_")
+                if propertyname == "Mean Volume" or propertyname == "Count per cell":
+                    organelletype = "Cell"  # TEMP use in cell data
+
+                proptypes = [None]
+                usepropname = propertyname
+                if propertyname == "Centroid":
+                    proptypes = ["X", "Y", "Z"]
+                elif propertyname == "Orientation":
+                    proptypes = ["r", "\u03B8 (theta)", "\u03C6 (phi)"]
+                    continue  # dont need for calculations
+                if organelletype == organelle:
+                    # if propertyname == "Centroid" or propertyname == "Orientation":
+                    #     # continue
+                    print(datafile, organelle, flush=True)
+
+                    loadedstackdata = loadproperty(datafile)
+                    if propertyname == "Mean Volume":  # TEMP
+                        loadedstackdata = loadedstackdata.mean(axis=-1)
+                    # print("DONE:", datafile, proptypes)
+
+                    for proptype in proptypes:
+                        if proptype is not None:
+                            usepropname = f"{propertyname}_{proptype}"
+                            # print(loadedstackdata.shape())
+                            # exit()
+                            usestackdata = loadedstackdata[..., proptypes.index(proptype)]
+                        else:
+                            usestackdata = loadedstackdata
+                        print(datafile, ":::", GFPchannel, organelletype, usepropname, strsigma, proptype,
+                              usestackdata.shape, loadedstackdata.shape)
+                        array3ddf = datautils.generateindexeddataframe(usestackdata, usepropname)
+
+
+                        if firstloop:
+                            array3ddfs = array3ddf.copy().dropna(axis='index')
+                            firstloop = False
+                        else:
+                            newpropcol = list(array3ddf.columns)[-1]
+                            # print(newpropcol)
+                            # if newpropcol == "Centroid":  # ignore centroid for now
+                            #     continue
+                            # else:
+                            array3ddfs[newpropcol] = array3ddf[newpropcol].dropna(axis='index')
+                    del loadedstackdata
+                    del usestackdata
+                    del array3ddf
+            if save:
+                print(f"saving as {totype}")
+                csvfilename = f"{GFPchannel}_{organelle}.csv"
+                csvpath = os.path.join(targetdir, csvfilename)
+                print(array3ddfs.shape)
+                # array3ddfs_na = array3ddfs.dropna().reset_index(drop=True)
+                # print(array3ddfs_na.shape)
+                # del array3ddfs
+                check = array3ddfs.to_csv(csvpath)
+            else:
+                return array3ddfs  # TODO : Support for merging various properties in one file
+            if check is None:
+                isconverted = True
+        except Exception as ex_csv:
+            print(f"Exception encountered in convertfromnpz {ex_csv}")
 
     return isconverted
 
 
 if __name__ == "__main__":
-
-    import os
+    import os, sys, re
     from os.path import join, isfile
-
+    # FOR Dominik
+    # savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
+    # subdirs = os.listdir(savepath_tmm20)
+    # flist_plt = [f for f in os.listdir(savepath_tmm20) if f.__contains__('.npz')]
+    # print(flist_plt)
+    # line_names = sorted(['1085A1', '1085A2', '1097F1', '48B1', '48B2', 'BBS10B1', 'BBS16B2', 'D3C', 'LCA5A1', 'LCA5A2',
+    #                      'LCA5B2', 'TJP11'])
+    # transwells = ['1', '2']
+    # FOVs = ['1', '2']
+    # maxcells = 150
+    # max_org_per_cell = 250
+    # sigma = 2
+    # organelles = ["Cell", "TOM"]
+    # for f in flist_plt:
+    #     fpath = os.path.join(savepath_tmm20, f)
+    #     tpath = os.path.join(savepath_tmm20, f.replace('.npz','.csv'))
+    #     organelle, propertyname, _ = re.split(r'[_.]', f)
+    #     # stackdata = loadproperty(fpath)
+    #     loadedstackdata = loadproperty(fpath)
+    #     dims = loadedstackdata.ndim
+    #     labelids = np.arange(loadedstackdata.shape[-1])  # this may be different for each organelle
+    #     names = ["Line name", "transwell no.", "FOV no.", "cell id", "organelle id"][:dims]  #
+    #     namevalues = [line_names, transwells, FOVs, list(np.arange(maxcells)), labelids][:dims]
+    #
+    #     index = pd.MultiIndex.from_product(namevalues, names=names)
+    #     # print("INDEX\n",index)
+    #     indexedstack = pd.DataFrame({propertyname: loadedstackdata.flatten()}, index=index).reset_index()
+    #     csvfilename = f"{organelle}_{propertyname}.csv"
+    #     csvpath = os.path.join(savepath_tmm20, csvfilename)
+    #     check = indexedstack.dropna().to_csv(csvpath)
+    """
     convertfromdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb18/TOM/results_all/npz/'
     targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Mar18/combinecsv/'
-    files = os.listdir(convertfromdir)
+    
     #####################################################################################
     convertfromnpz_allproperties(npzfolderpath=convertfromdir, targetdir=targetdir)
     #####################################################################################
+    """
+    # LOOP todo:1.  MYH MYH, 2. CETN2 CETN2
+    dirlist = 'D:/WORK/NIH_new_work/Final_calculations/'
+    # targetdir = 'D:/WORK/NIH_new_work/Final_calculations/'
+    subdirs = os.listdir(dirlist)
+    for subdir in subdirs:  # subdirectory for all npz files
+        # if not subdir in ["LAMP1","RAB5"]:
+        if subdir in ["ACTB", "CETN2","CTNNB1","DSP","FBL","GJA1","LAMP1","LC3B","MYH"]:
+            continue
+
+        organelles = ["Cell", "DNA", subdir]
+        # organelles = ["Cell"]
+        convertfromdir = os.path.join(dirlist, subdir, "calcs/")
+        targetdir = os.path.join(dirlist, subdir, "csvs/")
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+        for organelle in organelles:
+            try:
+                if organelle == "MYH":  # To address discrepancy in directory name for organelle
+                    organelle = "MYH1"
+                convertfromnpz_allproperties(npzfolderpath=convertfromdir, targetdir=targetdir, organelle=organelle)
+            except Exception as ee:
+                tb = sys.exc_info()[2]
+                ee.with_traceback(tb)
+                print("MISSED:", ee, convertfromdir, subdir, organelle)
+    #####################################################################################
+
     # datafiles = [f for f in files if isfile(join(convertfromdir, f)) if f.__contains__('.npz')]
     # for datafile in datafiles:
     #     filepath = join(convertfromdir,datafile)

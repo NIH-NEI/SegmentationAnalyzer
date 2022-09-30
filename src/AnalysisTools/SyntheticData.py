@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/syntheticcell/synth.tif"
     #
     # SyntheticCell.standard_synthetic_cell(savepath)
-    from src.AnalysisTools import ShapeMetrics
+    from src.examples import ShapeMetrics
     from src.AnalysisTools import experimentalparams as ep
     savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/syntheticcell/"
 

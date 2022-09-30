@@ -105,20 +105,18 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
 def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel", basendim=7):
     stackdims = stackdata.ndim
     abstraction = basendim - stackdims
+    # print(stackdims, abstraction, basendim)
     if not isinstance(usedchannels, list):
         usedchannels = [usedchannels]
     # y = boolean_indexing(stackdata)
     labelids = np.arange(stackdata.shape[-1])  # this may be different for each organelle
 
-    names = ["Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle"]  #
+    names = ["Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle_ID"]  #
     namevalues = [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
                   usedchannels, experimentalparams.WELLS, experimentalparams.FIELDSOFVIEW,
                   list(np.arange(experimentalparams.MAX_CELLS_PER_STACK)), labelids]
 
     if abstraction:
-        # abstraction=abstraction+7 - basendim
-        # for i in range(abstraction):
-        #     stackdata = np.mean(stackdata, axis=-1)
         names = names[:-abstraction]
         namevalues = namevalues[:-abstraction]
     index = pd.MultiIndex.from_product(namevalues, names=names)

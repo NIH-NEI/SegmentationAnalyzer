@@ -206,7 +206,7 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             # print("centroid_rel",centroid_rel," cell_centroid", cell_centroid, (gfp_c_rel)/(ep.ZSCALE, ep.XSCALE, ep.YSCALE), gfp_c_rel)
             radial_distribution2d = (gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) **(1/2)
             radial_distribution3d = (gfp_c_rel[0] ** 2 + gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2)**(1/2)
-            orientation3D = orientation_3D(bboxdata)
+            orientation3D = orientation_3D(organelle_obj[gfpslices])
             # orientations - PCA
             centroids[index, :] = np.array(centroid_rel)
             volumes[index] = volume
