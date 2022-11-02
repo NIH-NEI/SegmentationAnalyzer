@@ -44,8 +44,7 @@ class SyntheticCell():
         """
         TODO: Optional generate a scutoid
 
-        :param self:
-        :param size:
+        :param size: Size of the image
         :param n:
         :param z:
         :param color:
@@ -134,7 +133,7 @@ class SyntheticCell():
         pass
 
     @staticmethod
-    def generatesimplecuboid(length: int =20, breadth: int =20, width: int =20, refarray=None, loc='center'):
+    def generatesimplecuboid(length: int = 20, breadth: int = 20, width: int = 20, refarray=None, loc='center'):
         if refarray is not None:
             maxdims = refarray.shape
         else:
@@ -142,17 +141,17 @@ class SyntheticCell():
         cube = np.zeros(maxdims)
         # print(maxdims, (maxdims[0] - 20) // 2, type(maxdims[0]), type(length))
         print(f"generating cuboid of sides: {length}, {breadth}, {width}")
-        if loc=='center':
+        if loc == 'center':
             l1 = (maxdims[0] - length) // 2
             l2 = (maxdims[1] - breadth) // 2
             l3 = (maxdims[2] - width) // 2
             cube[l1:-l1, l2:-l2, l3:-l3] = 255
         else:
-            assert isinstance(loc,tuple)
-            c1 = maxdims[0]// 2 + loc[0]
-            c2 = maxdims[1]  // 2 + loc[1]
+            assert isinstance(loc, tuple)
+            c1 = maxdims[0] // 2 + loc[0]
+            c2 = maxdims[1] // 2 + loc[1]
             c3 = maxdims[2] // 2 + loc[2]
-            cube[c1:c1+length, c2:c2+breadth, c3:c3+width] = 255
+            cube[c1:c1 + length, c2:c2 + breadth, c3:c3 + width] = 255
         return cube
 
     @staticmethod
@@ -163,25 +162,27 @@ class SyntheticCell():
         expandedcuboid = expandedcuboid.transpose(0, 1, 2, 3, 4)
 
         # particle = SyntheticCell.generatesimplecuboid(length=2, breadth=2, width=2, refarray=cuboid, loc='center')
-        particle = SyntheticCell.generatesimplecuboid(length=1, breadth=1, width=1, refarray=cuboid, loc=(4,6,8))
+        particle = SyntheticCell.generatesimplecuboid(length=1, breadth=1, width=1, refarray=cuboid, loc=(4, 6, 8))
         expandedparticle = np.expand_dims(particle, 0)
         expandedparticle = np.expand_dims(expandedparticle, 0)
         expandedparticle = expandedparticle.transpose(0, 1, 2, 3, 4)
         cell = np.concatenate((expandedcuboid, expandedparticle), axis=1)
         return cell
 
+
 if __name__ == "__main__":
     # savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/syntheticcell/synth.tif"
     #
     # SyntheticCell.standard_synthetic_cell(savepath)
-    from src.examples import ShapeMetrics
-    from src.AnalysisTools import experimentalparams as ep
+    from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
+
     savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/syntheticcell/"
 
     cell = SyntheticCell.generatecuboidwithparticle()
     print(cell.shape)
-    cuboid = cell[:,0,:,:,:].squeeze()
-    centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity = ShapeMetrics.calculate_object_properties(cuboid)
+    cuboid = cell[:, 0, :, :, :].squeeze()
+    centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity = ShapeMetrics.calculate_object_properties(
+        cuboid)
     # print("CENTROID: ", centroid/(ep.ZSCALE, ep.XSCALE, ep.YSCALE))
     # print("VOLUME: ",volume/ep.VOLUMESCALE)
     # print("XSPAN: ",xspan/ep.XSCALE)
@@ -192,22 +193,23 @@ if __name__ == "__main__":
     # print("MINFERET: ", minferet/ep.XSCALE)
     # print("MIPAREA: ", miparea/ep.AREASCALE)
     # print("SPH: ",sphericity)
-    particle = cell[:,1,:,:,:].squeeze()
-    organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume =    ShapeMetrics.calculate_multiorganelle_properties(particle, centroid)
+    particle = cell[:, 1, :, :, :].squeeze()
+    organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume = ShapeMetrics.calculate_multiorganelle_properties(
+        particle, centroid)
     print("\n\nindividual properties")
-    print("organellecounts",organellecounts)
-    print("centroids", centroids/(ep.ZSCALE, ep.XSCALE, ep.YSCALE) )
-    print("volumes", volumes /ep.VOLUMESCALE)
-    print("xspans", xspans /ep.XSCALE)
-    print("yspans", yspans /ep.YSCALE)
-    print("zspans", zspans/ep.ZSCALE)
-    print("meanferets", meanferets /ep.XSCALE)
-    print( "minferets", minferets /ep.XSCALE)
-    print( "maxferets", maxferets /ep.XSCALE)
-    print( "mipareas", mipareas/ep.AREASCALE)
-    print( "orientations3D", orientations3D)
-    print( "z_distributions", z_distributions)
-    print( "radial_distribution2ds", radial_distribution2ds)
-    print( "radial_distribution3ds", radial_distribution3ds)
-    print( "meanvolume", meanvolume /ep.VOLUMESCALE)
+    print("organellecounts", organellecounts)
+    print("centroids", centroids / (ep.ZSCALE, ep.XSCALE, ep.YSCALE))
+    print("volumes", volumes / ep.VOLUMESCALE)
+    print("xspans", xspans / ep.XSCALE)
+    print("yspans", yspans / ep.YSCALE)
+    print("zspans", zspans / ep.ZSCALE)
+    print("meanferets", meanferets / ep.XSCALE)
+    print("minferets", minferets / ep.XSCALE)
+    print("maxferets", maxferets / ep.XSCALE)
+    print("mipareas", mipareas / ep.AREASCALE)
+    print("orientations3D", orientations3D)
+    print("z_distributions", z_distributions)
+    print("radial_distribution2ds", radial_distribution2ds)
+    print("radial_distribution3ds", radial_distribution3ds)
+    print("meanvolume", meanvolume / ep.VOLUMESCALE)
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)

@@ -1,10 +1,9 @@
 from os import listdir
 from os.path import isfile, join
-
 import numpy as np
+from types import *
+from experimentalparams import *
 import pandas as pd
-
-from src.AnalysisTools import experimentalparams, types
 
 # tn = 4
 """
@@ -15,8 +14,7 @@ tn = 4 for FBL
 """
 
 
-def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
-                 len1: int = experimentalparams.USEDWEEKS):
+def create3dlist(len2: int = USEDTREATMENTS, len1: int = USEDWEEKS) -> list:
     """
     Create 3d lists with dimensions len1 and len2
 
@@ -27,8 +25,7 @@ def create3dlist(len2: int = experimentalparams.USEDTREATMENTS,
     return [[[] for w in range(len1)] for t in range(len2)]
 
 
-def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENTS,
-                        len1: int = experimentalparams.USEDWEEKS):
+def createlistof3dlists(n: int = 7, len2: int = USEDTREATMENTS, len1: int = USEDWEEKS) -> list:
     """
     Creates n 3d lists with dimensions len1 and len2. Useful when there is need for multiple
     parameters
@@ -45,7 +42,7 @@ def createlistof3dlists(n: int = 7, len2: int = experimentalparams.USEDTREATMENT
     return listof3dlists
 
 
-def checkfinite(vals: types.ArrayLike, debug: bool = False):
+def checkfinite(vals: types.ArrayLike, debug: bool = False) -> bool:
     """
     Checks all values contained in input data structures for finite or non finite. If any value is
     not finite, returns False.
@@ -70,7 +67,13 @@ def checkfinite(vals: types.ArrayLike, debug: bool = False):
     return arefinite
 
 
-def checkfinitetemp(vals: types.ArrayLike, debug: bool = False):
+def checkfinitetemp(vals: types.ArrayLike, debug: bool = False) -> bool:
+    """
+    TODO: update (not currently in use), all iterables
+    :param vals:
+    :param debug:
+    :return:
+    """
     arefinite, isfinite = True, True
     # for val in vals:
     #     # print(val, vals)
@@ -84,7 +87,7 @@ def checkfinitetemp(vals: types.ArrayLike, debug: bool = False):
     return arefinite
 
 
-def generatedataframe(stackdata, propertyname: str = "Propertyname"):
+def generatedataframe(stackdata: np.ndarray, propertyname: str = "Propertyname") -> pd.DataFrame:
     """
     Converts stack based data into a pandas dataframe using multi-indexing.
     :param stackdata: data divided into stacks
@@ -95,14 +98,20 @@ def generatedataframe(stackdata, propertyname: str = "Propertyname"):
     y = boolean_indexing(stackdata)
     names = ["Treatment", "Week", "ID"]
     labeldata = np.arange(y.shape[-1])
-    index = pd.MultiIndex.from_product(
-        [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
-         labeldata],
-        names=names)
+    index = pd.MultiIndex.from_product([TREATMENT_TYPES, WS[:USEDWEEKS], labeldata], names=names)
     return pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
 
 
-def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel", basendim=7):
+def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel",
+                             basendim=7) -> pd.DataFrame:
+    """
+
+    :param stackdata:
+    :param propertyname:
+    :param usedchannels:
+    :param basendim:
+    :return:
+    """
     stackdims = stackdata.ndim
     abstraction = basendim - stackdims
     # print(stackdims, abstraction, basendim)
@@ -112,9 +121,8 @@ def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Propert
     labelids = np.arange(stackdata.shape[-1])  # this may be different for each organelle
 
     names = ["Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle_ID"]  #
-    namevalues = [experimentalparams.TREATMENT_TYPES, experimentalparams.WS[:experimentalparams.USEDWEEKS],
-                  usedchannels, experimentalparams.WELLS, experimentalparams.FIELDSOFVIEW,
-                  list(np.arange(experimentalparams.MAX_CELLS_PER_STACK)), labelids]
+    namevalues = [TREATMENT_TYPES, WS[:USEDWEEKS], usedchannels, WELLS, FIELDSOFVIEW,
+                  list(np.arange(MAX_CELLS_PER_STACK)), labelids]
 
     if abstraction:
         names = names[:-abstraction]
@@ -125,7 +133,8 @@ def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Propert
     return indexedstack
 
 
-def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: bool = False):
+def generatedataframeind(stackdata: np.ndarray, propertyname: str = "Property",
+                         useboolean: bool = False) -> pd.DataFrame:
     """
     :param stackdata: data divided into stacks
     :param propertyname: name of property
@@ -136,9 +145,7 @@ def generatedataframeind(stackdata, propertyname: str = "Property", useboolean: 
     labelids = np.arange(y.shape[-1])
     names = ["Treatment", "Week", "ID"]
     # labeldata = np.arange(shape[-1])
-    index = pd.MultiIndex.from_product(
-        [experimentalparams.USEDTREATMENTS, experimentalparams.USEDWEEKS, labelids],
-        names=names)
+    index = pd.MultiIndex.from_product([USEDTREATMENTS, USEDWEEKS, labelids], names=names)
     df = pd.DataFrame({propertyname: y.flatten()}, index=index).reset_index()
     return df
 
@@ -240,9 +247,9 @@ def getwr_3channel(df, af, lf, debug=False):
     Checks names of files and ensures the files correspond to each other. Returns week and replicate
     information for calculation purposes.
 
-    :param df: dnafilenames
-    :param af: actinfilenames
-    :param lf: gfp_channel_filenames
+    :param df: dna file names
+    :param af: actin file names
+    :param lf: gfp channel file names
     :return: week id, replicate id, week no. replicate number, common base string
     """
 
@@ -255,7 +262,7 @@ def getwr_3channel(df, af, lf, debug=False):
     assert basestringdna == basestringactin == basesstringgfp, f"unequal string lengths {basesstringgfp}, {basestringdna}, {basestringactin}"
     s1, r, fov = basestringdna.split("_")
     w = s1.split("-")[1]
-    w_ = experimentalparams.WS.index(w)
+    w_ = WS.index(w)
     r_ = int(r[1:]) - 2  # r goes from 2 to 11 - change it to 0-9
     fov_ = int(fov[-1:]) - 1  # fov goes from 1 to 6 - change it to 0-5
     return w, r, w_, r_, fov, fov_, basestringdna

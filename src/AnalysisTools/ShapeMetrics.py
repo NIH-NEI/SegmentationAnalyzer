@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from imea import measure_2d
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
+from scipy.ndimage import distance_transform_edt
 from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
 
@@ -15,20 +16,20 @@ VOLUMESCALE = ep.VOLUMESCALE
 AREASCALE = ep.AREASCALE
 
 
-def getedgeconnectivity(slices, maxz):
+def get_edge_connectivity(slices: slice, max_z: int):
     """
     Returns tags indicating connectivity of 3d object to top or bottom or both. Such data should be
     excluded from calculations due to the possibility of it being cut off.
 
     :param slices: slice object
-    :param maxz: max z based on z dimension of original stack
+    :param max_z: max z based on z dimension of original stack
     :return: tags indicating connectivity of 3d object to top or bottom or both.
     """
     connectedbot = False
     connectedtop = False
     minz = 0
-    assert maxz > 0, "maximum z must be greater than 0 to detect edge connectivity"
-    if maxz == 0:
+    assert max_z > 0, "maximum z must be greater than 0 to detect edge connectivity"
+    if max_z == 0:
         raise Exception
     top = slices[0].start
     bottom = slices[0].stop
@@ -36,7 +37,7 @@ def getedgeconnectivity(slices, maxz):
     if top == 0:
         tags = tags + "t"  # change to t?
         connectedtop = True
-    if bottom == maxz:
+    if bottom == max_z:
         tags = tags + "b"
         connectedbot = True
     if tags == "":
@@ -46,7 +47,7 @@ def getedgeconnectivity(slices, maxz):
     return tags, connectedtop, connectedbot
 
 
-def orientation_3D(bboximage):
+def orientation_3d(bboximage):
     """
     Calculates 3D orientation based on PCA with 3 components. Note that this orientation does not
     measure actual feret length, but is based on the distribution of data.
@@ -128,6 +129,37 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False, small_org
     return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity
 
 
+def distance_from_wall_2d(org_bbox, cell_bbox):
+    """
+    calculates the mean and standard deviation of distance of each pixel from the wall
+    :param org_bbox: bounding box with segmented organelle
+    :param cell_bbox: bounding box with corresponding segmented cell
+    :return: mean and std of distance of each pixel from cell border
+    """
+    assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
+    # distance map for cell
+    ed_map = distance_transform_edt(cell_bbox)
+    # distance map for organelle locations
+    org_map = np.multiply(ed_map, org_bbox)
+    # average and sd
+    m = np.mean(org_map)
+    s = np.std(org_map)
+    return m, s
+
+
+def distance_from_centroid_2d(org_bbox, cell_centroid):
+    """
+    calculates the mean and standard deviation of distance of each pixel from the wall
+    :param org_bbox: bounding box with segmented organelle
+    :param cell_bbox: bounding box with corresponding segmented cell
+    :return: mean and std of distance of each pixel from cell border
+    """
+    org_points = np.asarray(np.where(org_bbox > 0)).T  # coordinates of all relevant points
+    dists = np.sum(np.square(org_points - cell_centroid))  # euclidean distance for all points
+    m, s = dists.mean(), dists.std()
+    return m, s
+
+
 def getsphericity(bboxdata, volume):
     bboxdata = bboxdata.squeeze()
     # assert bboxdata.ndim == 3, f"sphericity inputs must be 3 dimensional, currently: {bboxdata.ndim} dimensional"
@@ -136,6 +168,7 @@ def getsphericity(bboxdata, volume):
     surface_area = mesh_surface_area(verts, faces)
     sphericity = (36 * np.pi * volume ** 2) ** (1. / 3.) / surface_area
     return sphericity
+
 
 def organellecentroid_samerefframe(bboxdata):
     bboxdatabw = (bboxdata > 0)
@@ -181,14 +214,15 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
     # centerz = ep.Z_FRAMES_PER_STACK//2+1
 
     volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, sphericities = np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(
+        mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(
+        mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     z_distributions, radial_distribution3ds, radial_distribution2ds = np.nan * np.ones(mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno)
     organellelabel, organellecounts = label(bboxdata > 0)
     org_df = pd.DataFrame(np.arange(1, organellecounts + 1, 1), columns=['organelle_index'])
 
-    centroids, orientations3D = np.nan * np.ones((mno, 3)), np.nan * np.ones((mno, 3))
+    centroids, orientations_3d = np.nan * np.ones((mno, 3)), np.nan * np.ones((mno, 3))
     # orgcentroid = np.multiply(np.asarray(center_of_mass(bboxdata)), np.array([ZSCALE, XSCALE, YSCALE])) # NOT Cellcentroid
     for index, row in org_df.iterrows():
         if index < mno:
@@ -197,16 +231,18 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             bboxcrop = find_objects(organelle_obj)
             gfpslices = bboxcrop[0]  # slices for gfp channel
             # All properties obtained from calcs are already scaled
-            _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(organelle_obj[gfpslices],
-                                                                                                                    small_organelle=True)
+            _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(
+                organelle_obj[gfpslices],
+                small_organelle=True)
             # distribution calculations
-            centroid_rel = organellecentroid_samerefframe(organelle_obj) # centroid location needs to be relative to the cell based slices
+            centroid_rel = organellecentroid_samerefframe(organelle_obj)
             gfp_c_rel = centroid_rel - cell_centroid
+            # centroid location needs to be relative to the cell based slices
             z_dist = gfp_c_rel[0]  # distance from centroid of the cell
             # print("centroid_rel",centroid_rel," cell_centroid", cell_centroid, (gfp_c_rel)/(ep.ZSCALE, ep.XSCALE, ep.YSCALE), gfp_c_rel)
-            radial_distribution2d = (gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) **(1/2)
-            radial_distribution3d = (gfp_c_rel[0] ** 2 + gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2)**(1/2)
-            orientation3D = orientation_3D(organelle_obj[gfpslices])
+            radial_distribution2d = (gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) ** (1 / 2)
+            radial_distribution3d = (gfp_c_rel[0] ** 2 + gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) ** (1 / 2)
+            orientation3D = orientation_3d(organelle_obj[gfpslices])
             # orientations - PCA
             centroids[index, :] = np.array(centroid_rel)
             volumes[index] = volume
@@ -220,16 +256,15 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             z_distributions[index] = z_dist
             radial_distribution2ds[index] = radial_distribution2d
             radial_distribution3ds[index] = radial_distribution3d
-            orientations3D[index, :] = np.array(orientation3D)
+            orientations_3d[index, :] = np.array(orientation3D)
 
 
         else:
             print(f"more than {mno} organelles found: {organellecounts}")
-            # add "organellecounts"
     try:
         meanvolume = np.nanmean(volumes)
     except RuntimeWarning:
         meanvolume = np.nan
     # except Exception as e:
     #     print(e, traceback.format_exc())
-    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume

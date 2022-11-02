@@ -100,7 +100,7 @@ if __name__ == "__main__":
         fovnos = [5]
         for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
-            t = ep.findtreatment(r)
+            t = ep.find_treatment(r)
             if t in ts and r in rs and fovno in fovnos:
                 print(
                     f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")

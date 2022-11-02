@@ -11,7 +11,7 @@ Metadata files are also generated to store the data. These may be used for redoi
 
 1. Install:
 ```
-pip install SegmentationAnalyzer # TODO
+git clone 
 ```
 
 2. Load and plot cell and organelle data over 4 weeks and 2 treatments (set in src.experimentalparams): 

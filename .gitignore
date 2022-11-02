@@ -1,2 +1,3 @@
 # Project exclude paths
 /SegmentationAnalyzer/
+/SegmentationAnalyzer/example/data/

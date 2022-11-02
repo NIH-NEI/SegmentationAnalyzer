@@ -1,4 +1,4 @@
-from src.AnalysisTools import types
+from _types import *
 
 USEDTREATMENTS = 2
 USEDWEEKS = 4  # weeks used for calculations: 1-4
@@ -64,7 +64,7 @@ def getunits(propertyname):
     return units[propertyname]
 
 
-def generate_repinfo(_alphabets: types.strlist = None):
+def replicate_info(_alphabets: strList = None) -> list:
     """
     Input one of the alphabets based on specific file information
 
@@ -84,7 +84,7 @@ def generate_repinfo(_alphabets: types.strlist = None):
     return reps
 
 
-def findtreatment(r):  # TODO: check with getwr_3channel for inconsistencies
+def find_treatment(r):  # TODO: check with getwr_3channel for inconsistencies
     """
     Returns the type of treatement based on replicate id
     :param r: replicate id ( converted to 0-9 range)
@@ -95,7 +95,7 @@ def findtreatment(r):  # TODO: check with getwr_3channel for inconsistencies
     return treatment
 
 
-def findweek(filename):
+def find_week(filename: PathLike) -> str:
     all_weeks = []
     for w in WS:
         if w in filename:
@@ -106,7 +106,7 @@ def findweek(filename):
     return all_weeks[0]
 
 
-def findrep(filename, _alphabets=None):
+def findrep(filename: str, _alphabets=None):
     """
     Use given alphabet for
     :param filename:
@@ -116,7 +116,7 @@ def findrep(filename, _alphabets=None):
     all_reps = []
     if _alphabets is None:
         _alphabets = ["B", "C", "D", "E", "F", "G"]
-        reps = generate_repinfo(_alphabets=_alphabets)
+        reps = replicate_info(_alphabets=_alphabets)
     else:
         raise Exception
     for r in reps:
@@ -129,7 +129,7 @@ def findrep(filename, _alphabets=None):
         return int(all_reps[0][1:]) - 2
 
 
-def getusedchannels(filelist):
+def getusedchannels(filelist: str) -> list:
     channels = []
     for file in filelist:
         channel = file.split("_")[0].split("-")[-1]
@@ -138,56 +138,59 @@ def getusedchannels(filelist):
     return channels
 
 
-def checkstackconditions(vols, xspans, yspans, zspans, mipareas):
+def check_sufficient_datapoints_per_stack(vols: list, x_spans: list, y_spans: list, z_spans: list,
+                                          mip_areas: list) -> bool:
     """
-    TODO: finalize
+    TODO:
     Only choose stacks with 10 or more datapoints in them - this will help reduce bias from stacks with too few cells
-    :param vols:
-    :param xspans:
-    :param yspans:
-    :param zspans:
-    :param mipareas:
-    :return:
+    :param vols: list of corresponding volumes
+    :param x_spans: list of corresponding x spans
+    :param y_spans:list of corresponding y spans
+    :param z_spans: list of corresponding z spans
+    :param mip_areas: list of corresponding mip areas
+    :return: are datapoints sufficient for stack based data?
     """
-    stackconditions = True
-    assert (len(vols) == len(xspans) == len(yspans) == len(zspans) == len(mipareas))
+    sufficient_datapoints = True
+    assert (len(vols) == len(x_spans) == len(y_spans) == len(z_spans) == len(mip_areas))
     if len(vols) <= 10:
-        stackconditions = False
-    return stackconditions
+        sufficient_datapoints = False
+    return sufficient_datapoints
 
 
-def checkcellconditions(cellvals, removecutcells=True, volcutoff=50):
+def cell_biologically_valid(cell_vals, remove_cut_cells=True, vol_cutoff=50, debug=False) -> (bool, bool):
     """
         Checks if cell (Actin/outer border enclosed object) meets minimum requirements chosen based on
     expert knowledge. This can be used to filter bad segmentations of cell data.
 
-    :param cellvals: list of values -> centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, cell touching top(bool),cell touching bot(bool).
-    :param removecutcells: True by default. Any cells touching top or bot are removed.
-    :param volcutoff: cutoff volume in cu. microns
+    :param cell_vals: list of values -> centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, cell touching top(bool),cell touching bot(bool).
+    :param remove_cut_cells: True by default. Any cells touching top or bot are removed.
+    :param vol_cutoff: cutoff volume in cu. microns
+    :param debug: print out values for cell properties
     :return: True if all conditions are met. False if any is not met (indicating biologically
     impossible segmentation.)
     """
-    [centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot] = cellvals
-    # print(centroid, vol, xspan, yspan, zspan, maxferet, minferet, miparea, top, bot)
+    [centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, top, bot] = cell_vals
+    if debug:
+        print(centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, top, bot)
     satisfied_conditions = True
-    cut = 0
-    if (top or bot) and removecutcells:
+    cut = False
+    if (top or bot) and remove_cut_cells:
         satisfied_conditions = False
-        cut = 1
-    if (zspan <= 1.0) or (xspan <= 1.5) or (yspan <= 1.5) or (minferet <= 1.5):
+        cut = True
+    if (z_span <= 1.0) or (x_span <= 1.5) or (y_span <= 1.5) or (min_feret <= 1.5):
         satisfied_conditions = False
-    if vol >= 100000 or vol <= volcutoff:  # 50 = 2130, 10 = 426
+    if vol >= 100000 or vol <= vol_cutoff:  # 50 = 2130, 10 = 426
         satisfied_conditions = False
     # print("CHECK:", satisfied_conditions, cut, top, bot)
     return satisfied_conditions, cut
 
 
-class channel():
-    def __init__(self, inputchannelname=None):
-        self.allchannelnames = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
-                                "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
-                                "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]
-        self.organellestructure = {
+class Channel:
+    def __init__(self, input_channel_name=None):
+        self.all_channel_names = ["dna", "actin", "membrane", "tom20", "pxn", "sec61b", "tuba1b",
+                                  "lmnb1", "fbl", "actb", "dsp", "lamp1", "tjp1", "myh10", "st6gal1",
+                                  "lc3b", "cetn2", "slc25a17", "rab5", "gja1", "ctnnb1"]
+        self.organelle_structure = {
             "dna": "Nucleus",  # check
             "actin": "Actin Filaments",
             "membrane": "Cell membrane",  # check
@@ -233,7 +236,7 @@ class channel():
             "gja1": "G",
             "ctnnb1": "F"
         }
-        self.channelprotein = {
+        self.channel_protein = {
             "dna": "",
             "actin": "Beta-actin",
             "membrane": "",
@@ -256,14 +259,14 @@ class channel():
             "gja1": "Connxin-43",
             "ctnnb1": "Beta-catenin"
         }
-        if self.validchannelname(inputchannelname):
-            self.channelname = inputchannelname
-            self.channelprotein = self.getproteinname(inputchannelname)
-            self.organellestructurename = self.getorganellestructurename(inputchannelname)
-            self.repalphabet = self.getrepalphabet(inputchannelname)
+        if self.validchannelname(input_channel_name):
+            self.channel_name = input_channel_name
+            self.channel_protein = self.getproteinname(input_channel_name)
+            self.organelle_structure_name = self.getorganellestructurename(input_channel_name)
+            self.rep_alphabet = self.getrepalphabet(input_channel_name)
         else:
             raise Exception(
-                f"Invalid Channel name:{inputchannelname}. Name must be one of {self.allchannelnames}")
+                f"Invalid Channel name:{input_channel_name}. Name must be one of {self.all_channel_names}")
         self.minarea = {  # TODO: get values from current segmenter or remove
             "dna": 4,
             "actin": 4,
@@ -290,19 +293,19 @@ class channel():
         self.directory = None
 
     def getallallchannelnames(self):
-        return self.allchannelnames
+        return self.all_channel_names
 
     def getminarea(self, key):
         return self.minarea[key]
 
     def getproteinname(self, key):
-        return self.channelprotein[key]
+        return self.channel_protein[key]
 
     def getorganellestructurename(self, key):
-        return self.organellestructure[key]
+        return self.organelle_structure[key]
 
     def validchannelname(self, key):
-        return key.lower() in self.allchannelnames
+        return key.lower() in self.all_channel_names
 
     def getrepalphabet(self, key):
         return self.rep_alphabet[key]

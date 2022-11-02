@@ -45,7 +45,7 @@ def createcelldict(id, parent=None, xspan=None, yspan=None, zspan=None, centroid
 class cellobject():
     def __init__(self, inputchannelname=None):
         if self.validchannelname(inputchannelname):
-            channelinfo = ep.channel(inputchannelname)
+            channelinfo = ep.Channel(inputchannelname)
             self.channelname = inputchannelname
             self.channelprotein = channelinfo.getproteinname(inputchannelname)
             self.organellestructurename = channelinfo.getorganellestructurename(inputchannelname)

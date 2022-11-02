@@ -11,11 +11,11 @@ from skimage.measure import label as skilbl
 from tifffile import imread
 
 from src.AnalysisTools import datautils
-from src.AnalysisTools import types
+from src.AnalysisTools._types import *
 from src.stackio import labelledcsvhandler
 
 
-def opensegmentedstack(name: types.PathLike, whiteonblack: types.SegmentationLike = "default", debug: bool = False):
+def opensegmentedstack(name: PathLike, whiteonblack: SegmentationLike = "default", debug: bool = False):
     """
     Handles simple binary segmentations as well as 3 color segmentations used in project.
     opens segmented stacks. whiteonblack
@@ -247,7 +247,6 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                               usestackdata.shape, loadedstackdata.shape)
                         array3ddf = datautils.generateindexeddataframe(usestackdata, usepropname)
 
-
                         if firstloop:
                             array3ddfs = array3ddf.copy().dropna(axis='index')
                             firstloop = False
@@ -283,6 +282,7 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
 if __name__ == "__main__":
     import os, sys, re
     from os.path import join, isfile
+
     # FOR Dominik
     # savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
     # subdirs = os.listdir(savepath_tmm20)
@@ -322,13 +322,17 @@ if __name__ == "__main__":
     #####################################################################################
     """
     # LOOP todo:1.  MYH MYH, 2. CETN2 CETN2
-    dirlist = 'D:/WORK/NIH_new_work/Final_calculations/'
+    dirlist = 'D:/WORK/NIH_new_work/Final_calc_2/'
     # targetdir = 'D:/WORK/NIH_new_work/Final_calculations/'
     subdirs = os.listdir(dirlist)
+    print(subdirs)
+    # subdirs = [dirr for dirr in subdirs if os.path.isdir(os.path.abspath(dirr))]
+    print(os.path.abspath(subdirs[0]))
     for subdir in subdirs:  # subdirectory for all npz files
+
         # if not subdir in ["LAMP1","RAB5"]:
-        if subdir in ["ACTB", "CETN2","CTNNB1","DSP","FBL","GJA1","LAMP1","LC3B","MYH"]:
-            continue
+        # if subdir in ["ACTB", "CETN2","CTNNB1","DSP","FBL","GJA1","LAMP1","LC3B","MYH"]:
+        #     continue
 
         organelles = ["Cell", "DNA", subdir]
         # organelles = ["Cell"]

@@ -1,18 +1,16 @@
 import datetime
 import traceback
-from concurrent.futures import ProcessPoolExecutor
 from os import mkdir
 from os.path import join, exists, isdir
-import time
+
 import click
 import numpy as np
 import pandas as pd
 from scipy.ndimage import find_objects  # ,label
 
 # from src.stackio import metadataHandler as meta
-from src.AnalysisTools import experimentalparams, datautils
-from src.examples import ShapeMetrics
-from src.AnalysisTools.types import PathLike
+from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
+from src.AnalysisTools._types import PathLike
 from src.Visualization import plotter, cellstack
 from src.stackio import stackio
 
@@ -26,22 +24,19 @@ from src.stackio import stackio
 @click.option("--savepath", default="../SegmentationAnalyzer/temp/", metavar="<PathLike>",
               help="Path to save measurements/results")
 @click.option("--channel", default="None", metavar="<String>", help="Name of channel")
-@click.option("--usesampledataonly", default=False, metavar="<Boolean>", help="Use only a sample of the data")
+@click.option("--sampledata", default=False, metavar="<Boolean>", help="Use only a sample of the data")
 @click.option("--test", default=False, metavar="<Boolean>",
               help="test the code withouth actually doing any calculations")
 @click.option("--debug", default=False, metavar="<Boolean>", help="Show extra information for debugging")
-@click.option("--usednareference", default=False, metavar="<Boolean>", help="Use DNA as a reference instead of Cell")
-@click.option("--num_processes", default=4, metavar="<int>", help="Use DNA as a reference instead of Cell")
 # @click.option("--help", help="Show details for function ")
-def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: PathLike, channel: str,
-                         usesampledataonly: bool,
-                         test: bool, debug: bool, usednareference=False, num_processes: int = 4):
+def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: PathLike, channel: str, sampledata: bool,
+                         test: bool, debug: bool):
     """
     Read all segmented image files. Measure shape metrics based on corresponding co-registered channels and save data for each metric.
 
     """
     print(f"Paths: gfp folder = {gfpfolder}\t cell folder = {cellfolder}\t savefolder = {savepath}")
-    # print(test)
+    print(test)
     print((gfpfolder == "../SegmentationAnalyzer/temp/"), (cellfolder == "../SegmentationAnalyzer/temp/"),
           (savepath == "../SegmentationAnalyzer/temp/"))
     if (gfpfolder == "../SegmentationAnalyzer/temp/") or (cellfolder == "../SegmentationAnalyzer/temp/") or (
@@ -50,7 +45,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
             print("default path detected. Conducting test run")
             print(f"Paths: gfp folder = {gfpfolder}\t cell folder = {cellfolder}\t savefolder = {savepath}")
             test = True
-
     # Important: make sure this indent is maintained throughout
     ###############################################
     usedWs = experimentalparams.USEDWEEKS
@@ -80,7 +74,15 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     chnls = experimentalparams.getusedchannels(actinfiles)
     no_chnls = len(chnls)
     badfiles = []
-
+    # Cell = {}
+    # DNA = {}
+    # GFP = {}
+    # Organelles = [Cell,DNA, GFP]
+    # Properties = ["Volume", "Centroids","Xspan"]
+    # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
+    # for Organelle in Organelles:
+    #     for propertyname in properties:
+    #         Organelle[propertyname] = np.nan *
     cell = {}
     cell["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells)
     cell["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, 3)
@@ -109,9 +111,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     dna["sphericity"] = np.nan * np.ones(dna["shape"])
     dna["aspectratio2d"] = np.nan * np.ones(dna["shape"])
     dna["volume_fraction"] = np.nan * np.ones(dna["shape"])
-    dna["zdistr"] = np.nan * np.ones(dna["shape"])
     # dnastackinvaginationvfrac = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
-
     gfp = {}
     gfp["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell)
     gfp["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell, 3)
@@ -126,22 +126,18 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["minferet"] = np.nan * np.ones(gfp["shape"])
     gfp["aspectratio2d"] = np.nan * np.ones(gfp["shape"])
     gfp["orientations"] = np.nan * np.ones(gfp["shape3d"])
-    gfp["cpc"] = np.nan * np.ones(cell["shape"])  # Note: Uses shape from cell
+    gfp["cpc"] = np.nan * np.ones(gfp["shape"])
     gfp["volfrac"] = np.nan * np.ones(gfp["shape"])
     gfp["zdistr"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist2d"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist2dmean"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
 
-    executor = ProcessPoolExecutor(max_workers=num_processes)
-    processes = []
-
     minlength = 5
     binvals = np.arange(minlength)
     freq = binvals.copy()
 
     for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
-        processes = []
         if test:
             click.echo("Test run")
             break
@@ -149,8 +145,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
             start_ts = datetime.datetime.now()
 
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
-            t = experimentalparams.findtreatment(r)
-            if usesampledataonly:
+            t = experimentalparams.find_treatment(r)
+            if sampledata:
                 uss_fovs = [0, 1]
                 uss_reps = [0, 1]  # will also do 5 and 6 respectively
                 if not (fovno in uss_fovs and r % 5 in uss_reps):
@@ -224,13 +220,13 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     # get bounding box of actin
                     bbox_actin = find_objects(objs)
                     slices = bbox_actin[0]
-                    edgetags, top, bot = ShapeMetrics.getedgeconnectivity(slices, objs.shape[0])
+                    edgetags, top, bot = ShapeMetrics.get_edge_connectivity(slices, objs.shape[0])
                     CellObject = objs[slices]
                     cellproperties = ShapeMetrics.calculate_object_properties(CellObject)
                     Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cmeanferet, Cminferet, Cmiparea, Csphericity = cellproperties
                     cellattribute_testvals = [Ccentroid, Cvolume, Cxspan, Cyspan, Czspan, Cmaxferet, Cminferet,
                                               Cmiparea, top, bot]
-                    biological_conditions_satisfied, cellcut = experimentalparams.checkcellconditions(
+                    biological_conditions_satisfied, cellcut = experimentalparams.cell_biologically_valid(
                         cellattribute_testvals)
                     # print("satisfied biological conditions?", biological_conditions_satisfied)
                     if biological_conditions_satisfied:  # and datautils.checkfinitetemp(cellattribute_testvals[1:8]):
@@ -293,7 +289,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                         continue
                                 else:
                                     usememberdnaid = memberdna_no
-                                dna_c_rel = Dcentroid - Ccentroid
 
                                 dna["Centroids"][t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dcentroid
                                 dna["Volumes"][t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dvolume
@@ -308,7 +303,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                     t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dmaxferet / Dminferet
                                 dna["volume_fraction"][
                                     t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dvolume / Cvolume * 100
-                                dna["zdistr"][t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = dna_c_rel[0]
+
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)
 
@@ -323,41 +318,28 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                  savename=join(cellstackfolder, stackfilename), save=True,
                                                  add_3d_cell_outline=False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
-                        usednareference = False
-                        refcentroid = None
+                        Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, \
+                        Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = ShapeMetrics.calculate_multiorganelle_properties(GFPObjects, Ccentroid)
+                        # print("gcount:", Gcount)
+                        # print("indorient", indorient3D.shape, indorient3D.T.shape)
+                        gfp["cpc"][t, w, 0, r % 5, fovno, obj_index] = Gcount
+                        gfp["meanvols"][t, w, 0, r % 5, fovno, obj_index] = Gmeanvol
+                        gfp["Centroids"][t, w, 0, r % 5, fovno, obj_index, :] = Gcentroid
+                        gfp["Volumes"][t, w, 0, r % 5, fovno, obj_index, :] = Gvolume
+                        gfp["xspan"][t, w, 0, r % 5, fovno, obj_index, :] = Gspan
+                        gfp["yspan"][t, w, 0, r % 5, fovno, obj_index, :] = Gyspan
+                        gfp["zspan"][t, w, 0, r % 5, fovno, obj_index, :] = Gzspan
+                        gfp["miparea"][t, w, 0, r % 5, fovno, obj_index, :] = Gmiparea
+                        gfp["maxferet"][t, w, 0, r % 5, fovno, obj_index, :] = Gmaxferet
+                        gfp["minferet"][t, w, 0, r % 5, fovno, obj_index, :] = Gminferet
+                        gfp["aspectratio2d"][t, w, 0, r % 5, fovno, obj_index, :] = Gmaxferet / Gminferet
+                        gfp["volfrac"][t, w, 0, r % 5, fovno, obj_index, :] = Gvolume / Cvolume * 100
+                        gfp["orientations"][t, w, 0, r % 5, fovno, obj_index, :] = Gorient3D
+                        gfp["zdistr"][t, w, 0, r % 5, fovno, obj_index, :] = Gz_dist
+                        gfp["raddist2d"][t, w, 0, r % 5, fovno, obj_index, :] = Gradial_dist2d
+                        gfp["raddist2dmean"][t, w, 0, r % 5, fovno, obj_index, :] = Gradial_dist2d / Cmeanferet
+                        gfp["raddist3d"][t, w, 0, r % 5, fovno, obj_index, :] = Gradial_dist3d
 
-                        if usednareference:
-                            refcentroid = Dcentroid
-                        else:
-                            refcentroid = Ccentroid
-
-                        processes.append((t, w, r, fovno, obj_index, Cvolume, Cmeanferet,
-                                          executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
-                                                          GFPObjects, refcentroid)))
-                print("Processes = ", len(processes))
-
-            for it, iw, ir, ifovno, obj_id, cvol, cmferet, process in processes:
-                features = process.result()
-                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = features
-                # print("gcount:", Gcount)
-                # print("indorient", indorient3D.shape, indorient3D.T.shape)
-                gfp["cpc"][it, iw, 0, ir % 5, ifovno, obj_id] = Gcount
-                gfp["meanvols"][it, iw, 0, ir % 5, ifovno, obj_id] = Gmeanvol
-                gfp["Centroids"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gcentroid
-                gfp["Volumes"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gvolume
-                gfp["xspan"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gspan
-                gfp["yspan"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gyspan
-                gfp["zspan"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gzspan
-                gfp["miparea"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gmiparea
-                gfp["maxferet"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gmaxferet
-                gfp["minferet"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gminferet
-                gfp["aspectratio2d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gmaxferet / Gminferet
-                gfp["volfrac"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gvolume / cvol * 100
-                gfp["orientations"][it, iw, 0, ir % 5, fovno, obj_id, :] = Gorient3D
-                gfp["zdistr"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gz_dist
-                gfp["raddist2d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
-                gfp["raddist2dmean"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d / cmferet
-                gfp["raddist3d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
@@ -365,18 +347,15 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
-    time.sleep(120)
-
     allCellvals = [cell["Centroids"], cell["Volumes"], cell["xspan"], cell["yspan"], cell["zspan"], cell["miparea"],
                    cell["maxferet"], cell["minferet"], cell["aspectratio2d"], cell["sphericity"]]  ##
     cellpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                      "2D Aspect ratio", "Sphericity"]
 
     allDNAvals = [dna["Centroids"], dna["Volumes"], dna["xspan"], dna["yspan"], dna["zspan"], dna["miparea"],
-                  dna["maxferet"], dna["minferet"], dna["aspectratio2d"], dna["volume_fraction"], dna["sphericity"],
-                  dna["zdistr"]]
+                  dna["maxferet"], dna["minferet"], dna["aspectratio2d"], dna["volume_fraction"], dna["sphericity"]]
     DNApropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "2D Aspect ratio", "Volume fraction", "Sphericity", "z-distribution"]
+                    "2D Aspect ratio", "Volume fraction", "Sphericity"]
     # dnastackinvaginationvfrac
     allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
                   gfp["maxferet"], gfp["minferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
