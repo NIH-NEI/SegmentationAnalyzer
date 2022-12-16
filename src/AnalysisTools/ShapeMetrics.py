@@ -129,9 +129,39 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False, small_org
     return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity
 
 
-def distance_from_wall_2d(org_bbox, cell_bbox):
+def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0):
     """
-    calculates the mean and standard deviation of distance of each pixel from the wall
+    calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
+    Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
+    :param org_bbox: bounding box with segmented organelle
+    :param cell_bbox: bounding box with corresponding segmented cell
+    :return: mean and std of distance of each pixel from cell border
+    """
+    assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
+    assert axis < cell_bbox.ndim
+    # distance map for cell
+    dims = cell_bbox.shape
+    org_map_n = np.zeros_like(cell_bbox)
+    for z in range(dims[axis]):
+        org2d = org_bbox[z, :, :].squeeze()
+        cell2d = cell_bbox[z, :, :].squeeze()
+        ed_map = distance_transform_edt(cell2d)
+        # distance map for organelle locations
+        mask2d = org2d > 0
+        org_map = ed_map * mask2d
+        org_map_n[z, :, :] = org_map
+        # average and sd
+
+    m = np.mean(org_map_n)
+    s = np.std(org_map_n)
+    if returnmap:
+        return m, s, org_map_n
+    return m, s
+
+
+def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False):
+    """
+    calculates the mean and standard deviation of distance of each pixel from the wall in 3D
     :param org_bbox: bounding box with segmented organelle
     :param cell_bbox: bounding box with corresponding segmented cell
     :return: mean and std of distance of each pixel from cell border
@@ -140,10 +170,13 @@ def distance_from_wall_2d(org_bbox, cell_bbox):
     # distance map for cell
     ed_map = distance_transform_edt(cell_bbox)
     # distance map for organelle locations
-    org_map = np.multiply(ed_map, org_bbox)
+    mask = org_bbox > 0
+    org_map = ed_map * mask
     # average and sd
     m = np.mean(org_map)
     s = np.std(org_map)
+    if returnmap:
+        return m, s, org_map
     return m, s
 
 
@@ -182,30 +215,25 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
     feature measurements for individual organelles (within a masked cell)
 
     :param bboxdata: 3D data in region of interest
-    :return:
-    :param centroids: center of mass (with all voxels weighted equally) giving the geometric centroid.
-    :param volumes: volume in pixels of each organelle
+    :param cell_centroid: location of cell centroid
 
-
-    :param bboxdata:
-    :param cell_centroid:
     :return:
     Returns the following metrics
-    :param organellecounts
-    :param centroids
-    :param volumes
-    :param xspans
-    :param yspans
-    :param zspans
-    :param maxferets
-    :param meanferets
-    :param minferets
-    :param mipareas
-    :param orientations3D
-    :param z_distributions
-    :param radial_distribution2ds
-    :param radial_distribution3ds
-    :param meanvolume
+    :param organellecounts: Count of organelles within boundingbox
+    :param centroids: center of mass (with all voxels weighted equally) giving the geometric centroid.
+    :param volumes: volume of all organelles within cell bounding box.
+    :param xspans: X-spans of all organelles within cell bounding box.
+    :param yspans: Y-spans of all organelles within cell bounding box.
+    :param zspans: Z-spans of all organelles within cell bounding box.
+    :param maxferets: maximum feret of all organelles within cell bounding box.
+    :param meanferets: mean ferets of all organelles within cell bounding box.
+    :param minferets: minimum ferets of all organelles within cell bounding box.
+    :param mipareas: Maximum intensity projection of all organelles within cell bounding box.
+    :param orientations3D: (r,theta,phi) values for all organelles within cell bounding box.
+    :param z_distributions: Z-distribution from the cell centroid of all organelles within cell bounding box.
+    :param radial_distribution2ds: 2D radial distribution from cell centroid of all organelles within cell bounding box.
+    :param radial_distribution3ds: 3D radial distribution from cell centroid of all organelles within cell bounding box.
+    :param meanvolume: mean volume per cell bounding box.
 
 
     """
@@ -239,7 +267,8 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             gfp_c_rel = centroid_rel - cell_centroid
             # centroid location needs to be relative to the cell based slices
             z_dist = gfp_c_rel[0]  # distance from centroid of the cell
-            # print("centroid_rel",centroid_rel," cell_centroid", cell_centroid, (gfp_c_rel)/(ep.ZSCALE, ep.XSCALE, ep.YSCALE), gfp_c_rel)
+            # print("centroid_rel",centroid_rel," cell_centroid", cell_centroid,
+            #       (gfp_c_rel)/(ep.ZSCALE, ep.XSCALE, ep.YSCALE), gfp_c_rel)
             radial_distribution2d = (gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) ** (1 / 2)
             radial_distribution3d = (gfp_c_rel[0] ** 2 + gfp_c_rel[1] ** 2 + gfp_c_rel[2] ** 2) ** (1 / 2)
             orientation3D = orientation_3d(organelle_obj[gfpslices])
@@ -267,4 +296,9 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
         meanvolume = np.nan
     # except Exception as e:
     #     print(e, traceback.format_exc())
-    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+    return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
+           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+
+
+if __name__ == "__main__":
+    pass

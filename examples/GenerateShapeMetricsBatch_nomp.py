@@ -10,7 +10,7 @@ from scipy.ndimage import find_objects  # ,label
 
 # from src.stackio import metadataHandler as meta
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
-from src.AnalysisTools._types import PathLike
+from src.AnalysisTools.dtypes import PathLike
 from src.Visualization import plotter, cellstack
 from src.stackio import stackio
 

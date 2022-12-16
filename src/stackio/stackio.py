@@ -11,7 +11,7 @@ from skimage.measure import label as skilbl
 from tifffile import imread
 
 from src.AnalysisTools import datautils
-from src.AnalysisTools._types import *
+from src.AnalysisTools.dtypes import *
 from src.stackio import labelledcsvhandler
 
 
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     #####################################################################################
     """
     # LOOP todo:1.  MYH MYH, 2. CETN2 CETN2
-    dirlist = 'D:/WORK/NIH_new_work/Final_calc_2/'
+    dirlist = 'D:/WORK/NIH_new_work/Final_calc_3/'
     # targetdir = 'D:/WORK/NIH_new_work/Final_calculations/'
     subdirs = os.listdir(dirlist)
     print(subdirs)

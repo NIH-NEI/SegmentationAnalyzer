@@ -1,8 +1,6 @@
 from os import listdir
 from os.path import isfile, join
-import numpy as np
-from types import *
-from experimentalparams import *
+from .experimentalparams import *
 import pandas as pd
 
 # tn = 4
@@ -42,7 +40,7 @@ def createlistof3dlists(n: int = 7, len2: int = USEDTREATMENTS, len1: int = USED
     return listof3dlists
 
 
-def checkfinite(vals: types.ArrayLike, debug: bool = False) -> bool:
+def checkfinite(vals: ArrayLike, debug: bool = False) -> bool:
     """
     Checks all values contained in input data structures for finite or non finite. If any value is
     not finite, returns False.
@@ -52,7 +50,7 @@ def checkfinite(vals: types.ArrayLike, debug: bool = False) -> bool:
     :return: Boolean value True = all values are finite; False = atleast 1 nonfinite encountered
     """
     arefinite, isfinite = True, True
-    ignoretypes = types.ArrayLike
+    ignoretypes = ArrayLike
     for val in vals:
         if not isinstance(val, ignoretypes):
             isfinite = np.isfinite(val)
@@ -67,7 +65,7 @@ def checkfinite(vals: types.ArrayLike, debug: bool = False) -> bool:
     return arefinite
 
 
-def checkfinitetemp(vals: types.ArrayLike, debug: bool = False) -> bool:
+def checkfinitetemp(vals: ArrayLike, debug: bool = False) -> bool:
     """
     TODO: update (not currently in use), all iterables
     :param vals:

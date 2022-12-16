@@ -1,3 +1,7 @@
 # Project exclude paths
 /SegmentationAnalyzer/
-/SegmentationAnalyzer/example/data/
+/SegmentationAnalyzer/data/
+/.ipynb_checkpoints
+*.tiff
+*.gif
+*.ipynb

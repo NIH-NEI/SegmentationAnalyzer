@@ -176,9 +176,11 @@ if __name__ == "__main__":
     # SyntheticCell.standard_synthetic_cell(savepath)
     from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
 
-    savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar25/syntheticcell/"
+    printall = False
+    savepath = "../../data/temp/"
 
     cell = SyntheticCell.generatecuboidwithparticle()
+    cell = SyntheticCell.generate_synthetic_cell()
     print(cell.shape)
     cuboid = cell[:, 0, :, :, :].squeeze()
     centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity = ShapeMetrics.calculate_object_properties(
@@ -196,20 +198,34 @@ if __name__ == "__main__":
     particle = cell[:, 1, :, :, :].squeeze()
     organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume = ShapeMetrics.calculate_multiorganelle_properties(
         particle, centroid)
-    print("\n\nindividual properties")
-    print("organellecounts", organellecounts)
-    print("centroids", centroids / (ep.ZSCALE, ep.XSCALE, ep.YSCALE))
-    print("volumes", volumes / ep.VOLUMESCALE)
-    print("xspans", xspans / ep.XSCALE)
-    print("yspans", yspans / ep.YSCALE)
-    print("zspans", zspans / ep.ZSCALE)
-    print("meanferets", meanferets / ep.XSCALE)
-    print("minferets", minferets / ep.XSCALE)
-    print("maxferets", maxferets / ep.XSCALE)
-    print("mipareas", mipareas / ep.AREASCALE)
-    print("orientations3D", orientations3D)
-    print("z_distributions", z_distributions)
-    print("radial_distribution2ds", radial_distribution2ds)
-    print("radial_distribution3ds", radial_distribution3ds)
-    print("meanvolume", meanvolume / ep.VOLUMESCALE)
+    print(particle.shape, cuboid.shape)
+    d2m, d2s, d2map = ShapeMetrics.distance_from_wall_2d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
+    d3m, d3s, d3map = ShapeMetrics.distance_from_wall_3d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
+    OmeTiffWriter.save(data=cell, uri=savepath + "synthcell.tiff", overwrite_file=True)
+    OmeTiffWriter.save(data=d2map, uri=savepath + "d2map.tiff", overwrite_file=True)
+    OmeTiffWriter.save(data=d3map, uri=savepath + "d3map.tiff", overwrite_file=True)
+
+    print(d2m, d2s, np.unique(d2map))
+    print()
+    print()
+    print()
+    print(d3m, d3s, np.unique(d3map))
+    if printall:
+        print("\n\nindividual properties")
+        print("organellecounts", organellecounts)
+        print("centroids", centroids / (ep.ZSCALE, ep.XSCALE, ep.YSCALE))
+        print("volumes", volumes / ep.VOLUMESCALE)
+        print("xspans", xspans / ep.XSCALE)
+        print("yspans", yspans / ep.YSCALE)
+        print("zspans", zspans / ep.ZSCALE)
+        print("meanferets", meanferets / ep.XSCALE)
+        print("minferets", minferets / ep.XSCALE)
+        print("maxferets", maxferets / ep.XSCALE)
+        print("mipareas", mipareas / ep.AREASCALE)
+        print("orientations3D", orientations3D)
+        print("z_distributions", z_distributions)
+        print("radial_distribution2ds", radial_distribution2ds)
+        print("radial_distribution3ds", radial_distribution3ds)
+        print("meanvolume", meanvolume / ep.VOLUMESCALE)
+        OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)

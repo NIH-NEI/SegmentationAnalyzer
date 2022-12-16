@@ -43,7 +43,6 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_c
     return success
 
 
-
 def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
     from src.stackio import stackio
     success = False
@@ -66,6 +65,10 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
 
 
 if __name__ == "__main__":
+
+    import os
+
+    print(os.getcwd())
     # [cell, dna, gfp] = [np.random.random((20, 500, 500)) >= 0.4 for _ in range(3)]
     # mergestack(cell, dna, gfp, savename="test")
 
@@ -73,7 +76,8 @@ if __name__ == "__main__":
     from src.stackio import stackio
     from os.path import join
     import os
-    segmentpath ="C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/"
+
+    segmentpath = "C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/"
     savepathdir = "C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/"
     chlist = os.listdir(segmentpath)
 
@@ -87,10 +91,13 @@ if __name__ == "__main__":
         actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
         GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
         # savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
+        foldername = f'{savepathdir}{ch}/p'
+        if not os.path.exists(foldername):
+            os.mkdir(savename)
         savename = f'{savepathdir}{ch}/imgs/'
         if not os.path.exists(savename):
             os.mkdir(savename)
-        print(len(dnafnames), len(actinfnames),len(GFPfnames))
+        print(len(dnafnames), len(actinfnames), len(GFPfnames))
         dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
                                                                                     debug=False)
         # standard stacks

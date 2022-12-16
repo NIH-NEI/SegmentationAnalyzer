@@ -1,4 +1,4 @@
-from _types import *
+from .dtypes import *
 
 USEDTREATMENTS = 2
 USEDWEEKS = 4  # weeks used for calculations: 1-4
