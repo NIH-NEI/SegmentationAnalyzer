@@ -396,7 +396,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
                     "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
-                    "Mean Volume"]
+                    "Mean Volume", "Mean 2D distance to wall", "Stdev 2D distance to wall", "Mean 3D distance to wall",
+                    "Stdev 3D distance to wall"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True
@@ -433,7 +434,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 print(e)
     for organelle in orgenelletype:
         stackio.convertfromnpz_allproperties(npzfolderpath=savepath, targetdir=join(savepath, "csv/"),
-                                         organelle=organelle)
+                                             organelle=organelle)
 
 
 if __name__ == "__main__":
