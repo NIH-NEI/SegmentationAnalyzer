@@ -129,7 +129,7 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False, small_org
     return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity
 
 
-def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0):
+def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
     Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
@@ -139,27 +139,34 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0):
     """
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     assert axis < cell_bbox.ndim
+    if usescale and (scales is None):
+        minscale = min([XSCALE, YSCALE])
+
+        scales = np.array([XSCALE, YSCALE]) / minscale
+    else:
+        scales = [1, 1]
+    print(scales)
     # distance map for cell
     dims = cell_bbox.shape
-    org_map_n = np.zeros_like(cell_bbox)
+    org_map_n = np.full((cell_bbox.shape), fill_value=np.nan)
     for z in range(dims[axis]):
         org2d = org_bbox[z, :, :].squeeze()
         cell2d = cell_bbox[z, :, :].squeeze()
-        ed_map = distance_transform_edt(cell2d)
+        ed_map = distance_transform_edt(cell2d, sampling=scales)
         # distance map for organelle locations
         mask2d = org2d > 0
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
         # average and sd
-
-    m = np.mean(org_map_n)
-    s = np.std(org_map_n)
+    org_map_nonzero = org_map_n[np.nonzero(org_map_n)]
+    m = np.mean(org_map_nonzero) * minscale
+    s = np.std(org_map_nonzero) * minscale
     if returnmap:
         return m, s, org_map_n
     return m, s
 
 
-def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False):
+def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall in 3D
     :param org_bbox: bounding box with segmented organelle
@@ -168,13 +175,19 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False):
     """
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     # distance map for cell
-    ed_map = distance_transform_edt(cell_bbox)
+    if usescale and (scales is None):
+        minscale = min([ZSCALE, XSCALE, YSCALE])
+        scales = np.array([ZSCALE, XSCALE, YSCALE]) / minscale
+    else:
+        scales = [1, 1, 1]
+    ed_map = distance_transform_edt(cell_bbox, sampling=scales)
     # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask
     # average and sd
-    m = np.mean(org_map)
-    s = np.std(org_map)
+    org_map_nonzero = org_map[np.nonzero(org_map)]
+    m = np.mean(org_map_nonzero) * minscale
+    s = np.std(org_map_nonzero) * minscale
     if returnmap:
         return m, s, org_map
     return m, s
@@ -209,13 +222,13 @@ def organellecentroid_samerefframe(bboxdata):
     return centroid
 
 
-def calculate_multiorganelle_properties(bboxdata, cell_centroid):
+def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
     """
     Note: Dimension must be in the order: z,x,y
     feature measurements for individual organelles (within a masked cell)
 
     :param bboxdata: 3D data in region of interest
-    :param cell_centroid: location of cell centroid
+    :param ref_centroid: location of cell or dna centroid
 
     :return:
     Returns the following metrics
@@ -247,6 +260,8 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
         mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     z_distributions, radial_distribution3ds, radial_distribution2ds = np.nan * np.ones(mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno)
+    wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss = np.nan * np.ones(mno), np.nan * np.ones(
+        mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     organellelabel, organellecounts = label(bboxdata > 0)
     org_df = pd.DataFrame(np.arange(1, organellecounts + 1, 1), columns=['organelle_index'])
 
@@ -262,9 +277,18 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
             _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(
                 organelle_obj[gfpslices],
                 small_organelle=True)
+            if cellobj is not None:
+                wall_dist_2d_m, wall_dist_2d_s = distance_from_wall_2d(org_bbox=organelle_obj[cellobj],
+                                                                       cell_bbox=cellobj)
+                wall_dist_3d_m, wall_dist_3d_s = distance_from_wall_2d(org_bbox=organelle_obj[cellobj],
+                                                                       cell_bbox=cellobj)
+                wall_dist_2d_ms[index] = wall_dist_2d_m
+                wall_dist_2d_ss[index] = wall_dist_2d_s
+                wall_dist_3d_ms[index] = wall_dist_3d_m
+                wall_dist_3d_ss[index] = wall_dist_3d_s
             # distribution calculations
             centroid_rel = organellecentroid_samerefframe(organelle_obj)
-            gfp_c_rel = centroid_rel - cell_centroid
+            gfp_c_rel = centroid_rel - ref_centroid
             # centroid location needs to be relative to the cell based slices
             z_dist = gfp_c_rel[0]  # distance from centroid of the cell
             # print("centroid_rel",centroid_rel," cell_centroid", cell_centroid,
@@ -297,7 +321,7 @@ def calculate_multiorganelle_properties(bboxdata, cell_centroid):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume, wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss
 
 
 if __name__ == "__main__":

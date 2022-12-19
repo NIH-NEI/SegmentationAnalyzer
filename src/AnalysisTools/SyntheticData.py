@@ -202,10 +202,11 @@ if __name__ == "__main__":
     d2m, d2s, d2map = ShapeMetrics.distance_from_wall_2d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
     d3m, d3s, d3map = ShapeMetrics.distance_from_wall_3d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=cell, uri=savepath + "synthcell.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=d2map, uri=savepath + "d2map.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=d3map, uri=savepath + "d3map.tiff", overwrite_file=True)
-
+    OmeTiffWriter.save(data=cell, uri=savepath + "synthcell_scaled.tiff", overwrite_file=True)
+    OmeTiffWriter.save(data=d2map, uri=savepath + "d2map_scaled.tiff", overwrite_file=True)
+    OmeTiffWriter.save(data=d3map, uri=savepath + "d3map_scaled.tiff", overwrite_file=True)
+    # 0.13906296296296297 0.8373936702642482
+    # 0.07602171534849127 0.4781034519114344
     print(d2m, d2s, np.unique(d2map))
     print()
     print()

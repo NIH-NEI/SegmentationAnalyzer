@@ -131,6 +131,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["raddist2d"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist2dmean"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
+    gfp["wall_dist_2d_ms"] = np.nan * np.ones(gfp["shape"])
+    gfp["wall_dist_2d_ss"] = np.nan * np.ones(gfp["shape"])
+    gfp["wall_dist_3d_ms"] = np.nan * np.ones(gfp["shape"])
+    gfp["wall_dist_3d_ss"] = np.nan * np.ones(gfp["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -332,12 +336,12 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
 
                         processes.append((t, w, r, fovno, obj_index, Cvolume, Cmeanferet,
                                           executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
-                                                          GFPObjects, refcentroid)))
+                                                          GFPObjects, refcentroid, CellObject)))
                 print("Processes = ", len(processes))
 
             for it, iw, ir, ifovno, obj_id, cvol, cmferet, process in processes:
                 features = process.result()
-                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = features
+                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol, Gwall_dist_2d_ms, Gwall_dist_2d_ss, Gwall_dist_3d_ms, Gwall_dist_3d_ss = features
                 # print("gcount:", Gcount)
                 # print("indorient", indorient3D.shape, indorient3D.T.shape)
                 gfp["cpc"][it, iw, 0, ir % 5, ifovno, obj_id] = Gcount
@@ -357,6 +361,11 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 gfp["raddist2d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
                 gfp["raddist2dmean"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d / cmferet
                 gfp["raddist3d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
+                gfp["wall_dist_2d_ms"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_2d_ms
+                gfp["wall_dist_2d_ss"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_2d_ss
+                gfp["wall_dist_3d_ms"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_3d_ms
+                gfp["wall_dist_3d_ss"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_3d_ss
+
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
@@ -380,7 +389,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
                   gfp["maxferet"], gfp["minferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
                   gfp["orientations"], gfp["zdistr"], gfp["raddist2d"], gfp["raddist2dmean"], gfp["raddist3d"],
-                  gfp["meanvols"]]
+                  gfp["meanvols"], gfp["wall_dist_2d_ms"], gfp["wall_dist_2d_ss"], gfp["wall_dist_3d_ms"],
+                  gfp["wall_dist_3d_ss"]]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
                     "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
