@@ -145,7 +145,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
         scales = np.array([XSCALE, YSCALE]) / minscale
     else:
         scales = [1, 1]
-    print(scales)
+    org_bbox = org_bbox > 0
     # distance map for cell
     dims = cell_bbox.shape
     org_map_n = np.full((cell_bbox.shape), fill_value=np.nan)
@@ -180,6 +180,7 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
         scales = np.array([ZSCALE, XSCALE, YSCALE]) / minscale
     else:
         scales = [1, 1, 1]
+    org_bbox = org_bbox > 0
     ed_map = distance_transform_edt(cell_bbox, sampling=scales)
     # distance map for organelle locations
     mask = org_bbox > 0
@@ -260,13 +261,16 @@ def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
         mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     z_distributions, radial_distribution3ds, radial_distribution2ds = np.nan * np.ones(mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno)
-    wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss = np.nan * np.ones(mno), np.nan * np.ones(
-        mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
+    # wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss = np.nan * np.ones(mno), np.nan * np.ones(
+    #     mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     organellelabel, organellecounts = label(bboxdata > 0)
     org_df = pd.DataFrame(np.arange(1, organellecounts + 1, 1), columns=['organelle_index'])
 
     centroids, orientations_3d = np.nan * np.ones((mno, 3)), np.nan * np.ones((mno, 3))
     # orgcentroid = np.multiply(np.asarray(center_of_mass(bboxdata)), np.array([ZSCALE, XSCALE, YSCALE])) # NOT Cellcentroid
+    wall_dist_2d_m, wall_dist_2d_s = distance_from_wall_2d(org_bbox=organellelabel, cell_bbox=cellobj)
+    wall_dist_3d_m, wall_dist_3d_s = distance_from_wall_3d(org_bbox=organellelabel, cell_bbox=cellobj)
+
     for index, row in org_df.iterrows():
         if index < mno:
             org_index = int(row['organelle_index'])
@@ -277,15 +281,6 @@ def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
             _, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, _ = calculate_object_properties(
                 organelle_obj[gfpslices],
                 small_organelle=True)
-            if cellobj is not None:
-                wall_dist_2d_m, wall_dist_2d_s = distance_from_wall_2d(org_bbox=organelle_obj[cellobj],
-                                                                       cell_bbox=cellobj)
-                wall_dist_3d_m, wall_dist_3d_s = distance_from_wall_2d(org_bbox=organelle_obj[cellobj],
-                                                                       cell_bbox=cellobj)
-                wall_dist_2d_ms[index] = wall_dist_2d_m
-                wall_dist_2d_ss[index] = wall_dist_2d_s
-                wall_dist_3d_ms[index] = wall_dist_3d_m
-                wall_dist_3d_ss[index] = wall_dist_3d_s
             # distribution calculations
             centroid_rel = organellecentroid_samerefframe(organelle_obj)
             gfp_c_rel = centroid_rel - ref_centroid
@@ -321,7 +316,7 @@ def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume, wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss
+           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume, wall_dist_2d_m, wall_dist_2d_s, wall_dist_3d_m, wall_dist_3d_s
 
 
 if __name__ == "__main__":

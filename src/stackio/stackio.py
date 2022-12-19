@@ -2,8 +2,7 @@ import json
 import pickle
 import time
 import traceback
-
-import numpy as np
+from os.path import join, isfile
 import pandas as pd
 from aicsimageio import AICSImage
 from skimage.measure import label as skilbl
@@ -283,7 +282,6 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
 
 if __name__ == "__main__":
     import os, sys, re
-    from os.path import join, isfile
 
     # FOR Dominik
     # savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"

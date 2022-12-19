@@ -134,7 +134,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["wall_dist_2d_ms"] = np.nan * np.ones(gfp["shape"])
     gfp["wall_dist_2d_ss"] = np.nan * np.ones(gfp["shape"])
     gfp["wall_dist_3d_ms"] = np.nan * np.ones(gfp["shape"])
-    gfp["wall_dist_3d_ss"] = np.nan * np.ones(gfp["shape"])
+    gfp["wall_dist_3d_ss"] = np.nan * np.ones(cell["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -155,6 +155,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
             t = experimentalparams.find_treatment(r)
             if usesampledataonly:
                 uss_fovs = [0, 1]
+                uss_fovs = [1]
                 uss_reps = [0, 1]  # will also do 5 and 6 respectively
                 if not (fovno in uss_fovs and r % 5 in uss_reps):
                     print(f"Skipping {basename} since using a smaller set.")
@@ -361,10 +362,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 gfp["raddist2d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
                 gfp["raddist2dmean"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d / cmferet
                 gfp["raddist3d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
-                gfp["wall_dist_2d_ms"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_2d_ms
-                gfp["wall_dist_2d_ss"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_2d_ss
-                gfp["wall_dist_3d_ms"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_3d_ms
-                gfp["wall_dist_3d_ss"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gwall_dist_3d_ss
+                gfp["wall_dist_2d_ms"][it, iw, 0, ir % 5, ifovno, obj_id] = Gwall_dist_2d_ms
+                gfp["wall_dist_2d_ss"][it, iw, 0, ir % 5, ifovno, obj_id] = Gwall_dist_2d_ss
+                gfp["wall_dist_3d_ms"][it, iw, 0, ir % 5, ifovno, obj_id] = Gwall_dist_3d_ms
+                gfp["wall_dist_3d_ss"][it, iw, 0, ir % 5, ifovno, obj_id] = Gwall_dist_3d_ss
 
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
@@ -373,7 +374,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
-    time.sleep(120)
+    if not test:
+        time.sleep(120)
 
     allCellvals = [cell["Centroids"], cell["Volumes"], cell["xspan"], cell["yspan"], cell["zspan"], cell["miparea"],
                    cell["maxferet"], cell["minferet"], cell["aspectratio2d"], cell["sphericity"]]  ##
@@ -429,8 +431,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                             percentile_include=True, selected_method_type=None, uselog=uselog[o])
             except Exception as e:
                 print(e)
-    stackio.convertfromnpz_allproperties(npzfolderpath=savepath, targetdir=join(savepath, "csv/"),
-                                         organelle=channel)
+    for organelle in orgenelletype:
+        stackio.convertfromnpz_allproperties(npzfolderpath=savepath, targetdir=join(savepath, "csv/"),
+                                         organelle=organelle)
 
 
 if __name__ == "__main__":
