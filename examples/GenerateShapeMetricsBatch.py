@@ -416,6 +416,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
                 loaded = stackio.loadproperty(fpath)
                 success = stackio.checksavedfileintegrity(loaded, prop)
+
                 # success = datautils.array_nan_equal(loaded[loaded.files[0]], prop)
                 if success:
                     print(f"SAVE SUCCESSFUL FOR {filename}\t\tNo. of Datapoints: {np.count_nonzero(~np.isnan(prop))}")
@@ -428,6 +429,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                             percentile_include=True, selected_method_type=None, uselog=uselog[o])
             except Exception as e:
                 print(e)
+    stackio.convertfromnpz_allproperties(npzfolderpath=savepath, targetdir=join(savepath, "csv/"),
+                                         organelle=channel)
 
 
 if __name__ == "__main__":

@@ -263,6 +263,8 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
             if save:
                 print(f"saving as {totype}")
                 csvfilename = f"{GFPchannel}_{organelle}.csv"
+                if not os.path.exists(targetdir):
+                    os.mkdir(targetdir)
                 csvpath = os.path.join(targetdir, csvfilename)
                 print(array3ddfs.shape)
                 # array3ddfs_na = array3ddfs.dropna().reset_index(drop=True)
