@@ -162,10 +162,10 @@ def checksavedfileintegrity(loadedstackdata, savestackdata, ftype="npz"):
 
 def convertfromnpz(npzpath, targetdir=None, totype="csv", save=True):
     """
-
-    :param npzpath:
-    :param targetdir:
-    :param totype:
+    Converts npz files to csv
+    :param npzpath: path to npz file
+    :param targetdir: target directory for saving converted files
+    :param totype: file format of file to be saved (currently limited to csv)
     :param save: save a file
     :return:
     """
@@ -184,6 +184,8 @@ def convertfromnpz(npzpath, targetdir=None, totype="csv", save=True):
         if save:
             csvfilename = f"{GFPchannel}_{organelletype}_{propertyname}.csv"
             csvpath = os.path.join(targetdir, csvfilename)
+            if not os.path.exists(csvpath):
+                os.mkdir(csvpath)
             check = array3ddf.to_csv(csvpath)
         else:
             return array3ddf  # TODO : Support for merging various properties in one file
@@ -265,6 +267,8 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                 if not os.path.exists(targetdir):
                     os.mkdir(targetdir)
                 csvpath = os.path.join(targetdir, csvfilename)
+                if not os.path.exists(csvpath):
+                    os.mkdir(csvpath)
                 print(array3ddfs.shape)
                 # array3ddfs_na = array3ddfs.dropna().reset_index(drop=True)
                 # print(array3ddfs_na.shape)

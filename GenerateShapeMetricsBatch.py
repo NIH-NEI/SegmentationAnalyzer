@@ -28,19 +28,23 @@ from src.stackio import stackio
 @click.option("--usesampledataonly", default=False, metavar="<Boolean>", help="Use only a sample of the data")
 @click.option("--test", default=False, metavar="<Boolean>",
               help="test the code withouth actually doing any calculations")
+@click.option("--dontsave", default=False, metavar="<Boolean>",
+              help="Option to savedata. Be careful when setting this as data will not be saved if set to true")
+@click.option("--generateplots", default=False, metavar="<Boolean>",
+              help="Option to generate plots immediately after saving data")
 @click.option("--debug", default=False, metavar="<Boolean>", help="Show extra information for debugging")
 @click.option("--usednareference", default=False, metavar="<Boolean>", help="Use DNA as a reference instead of Cell")
 @click.option("--num_processes", default=4, metavar="<int>", help="Use DNA as a reference instead of Cell")
 # @click.option("--help", help="Show details for function ")
 def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: PathLike, channel: str,
-                         usesampledataonly: bool,
-                         test: bool, debug: bool, usednareference=False, num_processes: int = 4):
+                         usesampledataonly: bool, test: bool, dontsave: bool, generateplots: bool, debug: bool,
+                         usednareference=False,
+                         num_processes: int = 4):
     """
     Read all segmented image files. Measure shape metrics based on corresponding co-registered channels and save data for each metric.
 
     """
     print(f"Paths: gfp folder = {gfpfolder}\t cell folder = {cellfolder}\t savefolder = {savepath}")
-    # print(test)
     print((gfpfolder == "../SegmentationAnalyzer/temp/"), (cellfolder == "../SegmentationAnalyzer/temp/"),
           (savepath == "../SegmentationAnalyzer/temp/"))
     if (gfpfolder == "../SegmentationAnalyzer/temp/") or (cellfolder == "../SegmentationAnalyzer/temp/") or (
@@ -327,7 +331,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                  savename=join(cellstackfolder, stackfilename), save=True,
                                                  add_3d_cell_outline=False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
-                        usednareference = False
+                        usednareference = False # TODO
                         refcentroid = None
 
                         if usednareference:
@@ -407,12 +411,11 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     orgenelletype = ["Cell", "DNA", channel]
     propertycategory = [allCellvals, allDNAvals, allGFPvals]
     # propertycategory_names = [allCELLvalnames,allDNAvalnames,allGFPvalnames]
-    generateplots, savedata = False, True
     # for otype in orgenelletype:
     uselog = [False, False, True]
     for o, (propertytype, otype) in enumerate(zip(propertycategory, orgenelletype)):
         for i, prop in enumerate(propertytype):
-            if savedata:
+            if not dontsave:
                 propertyname = propnames[o][i]
                 filename = f"{channel}_{otype}_{propertyname}_{strsigma}.npz"
                 fpath = join(savepath, filename)
