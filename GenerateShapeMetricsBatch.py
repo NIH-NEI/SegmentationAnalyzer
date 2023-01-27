@@ -331,7 +331,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                  savename=join(cellstackfolder, stackfilename), save=True,
                                                  add_3d_cell_outline=False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
-                        usednareference = False # TODO
+                        usednareference = False  # TODO
                         refcentroid = None
 
                         if usednareference:
@@ -436,6 +436,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
             except Exception as e:
                 print(e)
     for organelle in orgenelletype:
+        print(f"converting organelle: {organelle}")
         stackio.convertfromnpz_allproperties(npzfolderpath=savepath, targetdir=join(savepath, "csv/"),
                                              organelle=organelle)
 

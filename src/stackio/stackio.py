@@ -184,8 +184,6 @@ def convertfromnpz(npzpath, targetdir=None, totype="csv", save=True):
         if save:
             csvfilename = f"{GFPchannel}_{organelletype}_{propertyname}.csv"
             csvpath = os.path.join(targetdir, csvfilename)
-            if not os.path.exists(csvpath):
-                os.mkdir(csvpath)
             check = array3ddf.to_csv(csvpath)
         else:
             return array3ddf  # TODO : Support for merging various properties in one file
@@ -215,10 +213,9 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
     if totype == "csv":
         try:
             for datafile in datafiles:
-                GFPchannel, organelletype, propertyname, strsigma = datafile[:-4].split("/")[-1].split("_")
+                GFPchannel, organelletype, propertyname, strsigma = os.path.basename(datafile[:-4]).split("_")
                 if propertyname == "Mean Volume" or propertyname == "Count per cell":
                     organelletype = "Cell"  # TEMP use in cell data
-
                 proptypes = [None]
                 usepropname = propertyname
                 if propertyname == "Centroid":
@@ -267,8 +264,6 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                 if not os.path.exists(targetdir):
                     os.mkdir(targetdir)
                 csvpath = os.path.join(targetdir, csvfilename)
-                if not os.path.exists(csvpath):
-                    os.mkdir(csvpath)
                 print(array3ddfs.shape)
                 # array3ddfs_na = array3ddfs.dropna().reset_index(drop=True)
                 # print(array3ddfs_na.shape)
@@ -279,7 +274,8 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
             if check is None:
                 isconverted = True
         except Exception as ex_csv:
-            print(f"Exception encountered in convertfromnpz {ex_csv}")
+            print(f"Exception encountered in convertfromnpz {ex_csv} @ {datafile}")
+            print(traceback.format_exc())
 
     return isconverted
 
