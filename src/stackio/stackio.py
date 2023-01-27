@@ -214,7 +214,7 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
         try:
             for datafile in datafiles:
                 GFPchannel, organelletype, propertyname, strsigma = os.path.basename(datafile[:-4]).split("_")
-                if propertyname == "Mean Volume" or propertyname == "Count per cell":
+                if propertyname == "Mean Volume" or propertyname == "Count per cell" or propertyname.__contains__("distance to wall"):
                     organelletype = "Cell"  # TEMP use in cell data
                 proptypes = [None]
                 usepropname = propertyname
