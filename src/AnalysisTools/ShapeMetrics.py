@@ -238,7 +238,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     for z in range(dims[axis]):
         org2d = org_bbox[z, :, :].squeeze()
         cell2d = cell_bbox[z, :, :].squeeze()
-        ed_map = distance_transform_edt(cell2d, sampling=scales)
+        ed_map = np.minimum(distance_transform_edt(cell2d, sampling=scales) - m_dilations, -m_dilations)
         # distance map for organelle locations
         mask2d = org2d > 0
         org_map = ed_map * mask2d
@@ -281,7 +281,7 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     else:
         scales = [1, 1, 1]
     org_bbox = org_bbox > 0
-    ed_map = distance_transform_edt(cell_bbox, sampling=scales)
+    ed_map = np.minimum(distance_transform_edt(cell_bbox, sampling=scales) - m_dilations, -m_dilations)
     # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask
