@@ -177,14 +177,14 @@ if __name__ == "__main__":
     from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
 
     printall = False
+    savell = True
     savepath = "../../data/temp/"
 
-    cell = SyntheticCell.generatecuboidwithparticle()
-    cell = SyntheticCell.generate_synthetic_cell()
-    print(cell.shape)
-    cuboid = cell[:, 0, :, :, :].squeeze()
-    centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity = ShapeMetrics.calculate_object_properties(
-        cuboid)
+    # cell = SyntheticCell.generatecuboidwithparticle()
+    # cuboid = cell[:, 0, :, :, :].squeeze()
+
+    # particle = cell[:, 1, :, :, :].squeeze()
+
     # print("CENTROID: ", centroid/(ep.ZSCALE, ep.XSCALE, ep.YSCALE))
     # print("VOLUME: ",volume/ep.VOLUMESCALE)
     # print("XSPAN: ",xspan/ep.XSCALE)
@@ -195,24 +195,38 @@ if __name__ == "__main__":
     # print("MINFERET: ", minferet/ep.XSCALE)
     # print("MIPAREA: ", miparea/ep.AREASCALE)
     # print("SPH: ",sphericity)
-    particle = cell[:, 1, :, :, :].squeeze()
-    organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume = ShapeMetrics.calculate_multiorganelle_properties(
-        particle, centroid)
-    print(particle.shape, cuboid.shape)
-    d2m, d2s, d2map = ShapeMetrics.distance_from_wall_2d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
-    d3m, d3s, d3map = ShapeMetrics.distance_from_wall_3d(org_bbox=particle, cell_bbox=cuboid, returnmap=True)
+    cell = SyntheticCell.generate_synthetic_cell()
+    print(cell.shape)
+    cellobj = cell[:, 0, :, :, :].squeeze()
+    organelle_obj = cell[:, 1, :, :, :].squeeze() & cellobj
+    print("organelle and cellobj shapes: ", organelle_obj.shape, cellobj.shape)
+
+    centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity = ShapeMetrics.calculate_object_properties(
+        cellobj)
+    # Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol, GwallDist2dms, GwallDist2dSS, GwallDist3dms, GwallDist3dSS
+    organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume = \
+        ShapeMetrics.calculate_multiorganelle_properties(organelle_obj, centroid)
+    m_dilations = 2
+    d2m, d2s, d2map, d2cbbox = \
+        ShapeMetrics.distance_from_wall_2d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True, m_dilations=m_dilations)
+    d3m, d3s, d3map, d3cbbox = \
+        ShapeMetrics.distance_from_wall_3d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True, m_dilations=m_dilations)
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=cell, uri=savepath + "synthcell_scaled.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=d2map, uri=savepath + "d2map_scaled.tiff", overwrite_file=True)
-    OmeTiffWriter.save(data=d3map, uri=savepath + "d3map_scaled.tiff", overwrite_file=True)
+    if savell:
+        OmeTiffWriter.save(data=cell, uri=savepath + "synthcell_scaled.tiff", overwrite_file=True)
+        OmeTiffWriter.save(data=d2map, uri=savepath + f"d2map_scaled_{m_dilations}.tiff", overwrite_file=True)
+        OmeTiffWriter.save(data=d3map, uri=savepath + f"d3map_scaled_{m_dilations}.tiff", overwrite_file=True)
+        OmeTiffWriter.save(data=d2cbbox, uri=savepath + f"d2map_cbbox_{m_dilations}.tiff", overwrite_file=True)
+        OmeTiffWriter.save(data=d3cbbox, uri=savepath + f"d3map_cbbox_{m_dilations}.tiff", overwrite_file=True)
     # 0.13906296296296297 0.8373936702642482
     # 0.07602171534849127 0.4781034519114344
-    print(d2m, d2s, np.unique(d2map))
-    print()
-    print()
-    print()
-    print(d3m, d3s, np.unique(d3map))
     if printall:
+        print(d2m, d2s, np.unique(d2map))
+        print()
+        print()
+        print(d3m, d3s, np.unique(d3map))
+        print()
+
         print("\n\nindividual properties")
         print("organellecounts", organellecounts)
         print("centroids", centroids / (ep.ZSCALE, ep.XSCALE, ep.YSCALE))
@@ -229,4 +243,4 @@ if __name__ == "__main__":
         print("radial_distribution2ds", radial_distribution2ds)
         print("radial_distribution3ds", radial_distribution3ds)
         print("meanvolume", meanvolume / ep.VOLUMESCALE)
-        OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
+        OmeTiffWriter.save(data=cellobj, uri=savepath + "cuboid.tiff", overwrite_file=True)

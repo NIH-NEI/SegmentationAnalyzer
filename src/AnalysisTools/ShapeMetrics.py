@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from imea import measure_2d
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, binary_dilation
 from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
 
@@ -129,26 +129,112 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False, small_org
     return centroid, volume, xspan, yspan, zspan, maxferet, meanferet, minferet, miparea, sphericity
 
 
-def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None):
+def dilate_bbox_uniform(ip_bbox, m=0):
+    """
+    'dilates'/pads given ndimensional matrix with given value
+
+    :param ip_bbox:
+    :param m:
+    :return:
+    """
+    assert isinstance(m, int), "number of dilations must be an integer"
+    # dilate_boundary
+    n_dim_pad = tuple([(m, m)] * ip_bbox.ndim)
+    op_bbox = np.pad(ip_bbox, pad_width=n_dim_pad)
+    return op_bbox
+
+
+def dilate_boundary(bbox, m=0):
+    """
+    performs 'binary' dilation on integer matrix.
+
+    :param bbox:
+    :param m:
+    :return:
+    """
+    assert isinstance(m, int), "number of dilations must be an integer"
+    # print("before", bbox.shape, np.unique(bbox), np.count_nonzero(bbox), m)
+    assert len(np.unique(bbox)) <= 2, f"Input bounding box must contain upto 2 values, currently{len(np.unique(bbox))}"
+    val = max(np.unique(bbox))
+    bbox = binary_dilation(bbox > 0, iterations=m) * val
+    # print("after", bbox.shape, np.unique(bbox), np.count_nonzero(bbox))
+    # dilate object
+    return bbox
+
+
+def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
+    """
+    pads a 3d slice taking into account the limits of the original stack. This roundabout method is required to avoid passing the entire stack as argument which slows calculations down.
+
+    :param ip_slice_obj:
+    :param pad_length:
+    :param stackshape:
+    :return:
+    """
+    modified_slice_obj = []
+    slicediffs = []
+    ideal_shifted_slice = []
+    for i, ip_slice in enumerate(ip_slice_obj):
+        start_0 = ip_slice.start - pad_length
+        stop_0 = ip_slice.stop + pad_length
+        start = max(start_0, 0)
+        stop = min(stop_0, stackshape[i])
+        new_slice = slice(start, stop, ip_slice.step)
+        modified_slice_obj.append(new_slice)
+        # diffpad value can only be positive as we can only remove values
+        slicediff = (np.abs(start - start_0), np.abs(stop - stop_0))
+        slicediffs.append(slicediff)
+        #
+        shifted_slice = slice(pad_length, ip_slice.stop - ip_slice.start + pad_length, ip_slice.step)
+        ideal_shifted_slice.append(shifted_slice)
+    return tuple(modified_slice_obj), slicediffs, tuple(ideal_shifted_slice)
+
+
+def phantom_pad(bbox, slicediff):
+    """
+    Pads the box with given pad
+    :param bbox:
+    :param slicediff:
+    :return:
+    """
+    assert bbox.ndim == len(
+        slicediff), f"dimensions for bbox and slicediff must match, currently bbox:{bbox.ndim}, slicediff:{len(slicediff)}"
+    op_bbox = np.pad(bbox, pad_width=slicediff)
+    return op_bbox
+
+
+def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, m_dilations=0):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
     Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
-    :param org_bbox: bounding box with segmented organelle
-    :param cell_bbox: bounding box with corresponding segmented cell
+    :param org_bbox: bounding box with segmented organelle, pre-dilated if m_dilations !=0
+    :param cell_bbox: bounding box with corresponding segmented cell, undilated
+    :param returnmap : returns euclidean distance transform map
+    :param axis : axis along which all frames are considered.
+    :param usescale : scales euclidean distance map based on resolution
+    :param scales :
     :return: mean and std of distance of each pixel from cell border
     """
+
+    if m_dilations:
+        # Dilate bounding boxes for both cell and organelle
+        if org_bbox.shape == cell_bbox.shape:
+            print("organelle bbox not predilated, dilating....")
+            org_bbox = dilate_bbox_uniform(org_bbox, m=m_dilations)
+        cell_bbox = dilate_bbox_uniform(cell_bbox, m=m_dilations)
+        # Dilate boundary only for Cell
+        cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     assert axis < cell_bbox.ndim
     if usescale and (scales is None):
         minscale = min([XSCALE, YSCALE])
-
         scales = np.array([XSCALE, YSCALE]) / minscale
     else:
         scales = [1, 1]
     org_bbox = org_bbox > 0
     # distance map for cell
     dims = cell_bbox.shape
-    org_map_n = np.full((cell_bbox.shape), fill_value=np.nan)
+    org_map_n = np.full(cell_bbox.shape, fill_value=np.nan)
     for z in range(dims[axis]):
         org2d = org_bbox[z, :, :].squeeze()
         cell2d = cell_bbox[z, :, :].squeeze()
@@ -162,18 +248,32 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     m = np.mean(org_map_nonzero) * minscale
     s = np.std(org_map_nonzero) * minscale
     if returnmap:
-        return m, s, org_map_n
+        return m, s, org_map_n, cell_bbox
     return m, s
 
 
-def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None):
+def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None, m_dilations=0):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall in 3D
-    :param org_bbox: bounding box with segmented organelle
-    :param cell_bbox: bounding box with corresponding segmented cell
+    :param org_bbox : bounding box with segmented organelle
+    :param cell_bbox : bounding box with corresponding segmented cell
+    :param returnmap : returns euclidean distance transform map
+    :param usescale :
+    :param scales :
+    :param m_dilations :
+
     :return: mean and std of distance of each pixel from cell border
     """
+    if m_dilations:
+        # Dilate bounding boxes for both cell and organelle
+        if org_bbox.shape == cell_bbox.shape:
+            print("organelle bbox not predilated, dilating....")
+            org_bbox = dilate_bbox_uniform(org_bbox, m=m_dilations)
+        cell_bbox = dilate_bbox_uniform(cell_bbox, m=m_dilations)
+        # Dilate boundary only for Cell
+        cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
+
     # distance map for cell
     if usescale and (scales is None):
         minscale = min([ZSCALE, XSCALE, YSCALE])
@@ -190,7 +290,7 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     m = np.mean(org_map_nonzero) * minscale
     s = np.std(org_map_nonzero) * minscale
     if returnmap:
-        return m, s, org_map
+        return m, s, org_map, cell_bbox
     return m, s
 
 
@@ -223,13 +323,15 @@ def organellecentroid_samerefframe(bboxdata):
     return centroid
 
 
-def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
+def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
     """
     Note: Dimension must be in the order: z,x,y
     feature measurements for individual organelles (within a masked cell)
 
-    :param bboxdata: 3D data in region of interest
+    :param org_bboxdata: 3D data in padded region of interest
     :param ref_centroid: location of cell or dna centroid
+    :param cellobj:
+    :param d2wbbox:
 
     :return:
     Returns the following metrics
@@ -261,15 +363,11 @@ def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
         mno), np.nan * np.ones(mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
     z_distributions, radial_distribution3ds, radial_distribution2ds = np.nan * np.ones(mno), np.nan * np.ones(
         mno), np.nan * np.ones(mno)
-    # wall_dist_2d_ms, wall_dist_2d_ss, wall_dist_3d_ms, wall_dist_3d_ss = np.nan * np.ones(mno), np.nan * np.ones(
-    #     mno), np.nan * np.ones(mno), np.nan * np.ones(mno)
-    organellelabel, organellecounts = label(bboxdata > 0)
+    organellelabel, organellecounts = label(org_bboxdata > 0)
     org_df = pd.DataFrame(np.arange(1, organellecounts + 1, 1), columns=['organelle_index'])
 
     centroids, orientations_3d = np.nan * np.ones((mno, 3)), np.nan * np.ones((mno, 3))
     # orgcentroid = np.multiply(np.asarray(center_of_mass(bboxdata)), np.array([ZSCALE, XSCALE, YSCALE])) # NOT Cellcentroid
-    wall_dist_2d_m, wall_dist_2d_s = distance_from_wall_2d(org_bbox=organellelabel, cell_bbox=cellobj)
-    wall_dist_3d_m, wall_dist_3d_s = distance_from_wall_3d(org_bbox=organellelabel, cell_bbox=cellobj)
 
     for index, row in org_df.iterrows():
         if index < mno:
@@ -316,7 +414,7 @@ def calculate_multiorganelle_properties(bboxdata, ref_centroid, cellobj=None):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume, wall_dist_2d_m, wall_dist_2d_s, wall_dist_3d_m, wall_dist_3d_s
+           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
 
 
 if __name__ == "__main__":

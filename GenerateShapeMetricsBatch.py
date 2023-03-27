@@ -135,10 +135,12 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["raddist2d"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist2dmean"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
-    gfp["wallDist2dms"] = np.nan * np.ones(cell["shape"])
-    gfp["wallDist2dSS"] = np.nan * np.ones(cell["shape"])
-    gfp["wallDist3dms"] = np.nan * np.ones(cell["shape"])
-    gfp["wallDist3dSS"] = np.nan * np.ones(cell["shape"])
+    max_pad_length = 5
+    for pl in range(max_pad_length + 1):
+        gfp[f"wallDist2dms{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"wallDist3dms{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"wallDist3dSS{pl}"] = np.nan * np.ones(cell["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -174,15 +176,13 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 DNAfilepath = join(cellfolder, dnafile)
                 labelactin, labeldna = stackio.read_get_labelledstacks(Actinfilepath, DNAfilepath)
                 img_GFP = stackio.opensegmentedstack(GFPfilepath)
-
-                print(
-                    f"img_GFP.shape: {img_GFP.shape} == labelactin.shape: {labelactin.shape} == labeldna.shape: {labeldna.shape}")
-
+                stackshape = img_GFP.shape
+                print(f"img_GFP.shape: {stackshape} == labelactin.shape:"
+                      f" {labelactin.shape} == labeldna.shape: {labeldna.shape}")
                 is_ = list(np.unique(labelactin))
                 js_ = list(np.unique(labeldna))
                 is_.remove(0)
                 js_.remove(0)
-                maxid = None
 
                 savename = "_".join(actinfile.split("_")[:-2]) + "_connectmat"
                 # savenameoverlaps = "_".join(actinfile.split("_")[:-2]) + "_overlapmat"
@@ -318,10 +318,27 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                     t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = Dvolume / Cvolume * 100
                                 dna["zdistr"][t, w, 0, r % 5, fovno, obj_index, usememberdnaid] = dna_c_rel[0]
                         # GFP members
-                        GFPObjects = (img_GFP[slices] & CellObject)
+                        GFPObjects = (img_GFP[slices] & CellObject)  # Uses default slices
 
-                        saveindividualcellstack = (np.random.random(1)[0] < 0.05)  # 10% sample ~~is_//10
-                        # saveindividualcellstack = True  # 10% sample ~~is_//10
+                        # NOTE: This is currently necessary for calculation of distance to wall metrics
+                        for pad_length in range(max_pad_length + 1):
+                            d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices, pad_length=pad_length,
+                                                                                 stackshape=stackshape)
+                            # add phantom pad to mimic a equal dilation
+                            org_bbox = ShapeMetrics.phantom_pad(img_GFP[d2w_slices], slicediffpad)
+
+                            wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=org_bbox,
+                                                                                                cell_bbox=CellObject,
+                                                                                                m_dilations=pad_length, shifted_idx = shifted_slice_idx)
+                            wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=org_bbox,
+                                                                                                cell_bbox=CellObject,
+                                                                                                m_dilations=pad_length, shifted_idx = shifted_slice_idx)
+                            gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, obj_index] = wall_dist_2d_m
+                            gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, obj_index] = wall_dist_2d_s
+                            gfp[f"wallDist3dms{pad_length}"][t, w, 0, r % 5, fovno, obj_index] = wall_dist_3d_m
+                            gfp[f"wallDist3dSS{pad_length}"][t, w, 0, r % 5, fovno, obj_index] = wall_dist_3d_s
+                        saveindividualcellstack = (np.random.random(1)[0] < 0.05)  # 5% sample ~~is_//10
+
                         if saveindividualcellstack:
                             cellstackfolder = join(savepath, 'cellstacks').replace("\\", "/")
                             if not isdir(cellstackfolder):
@@ -341,12 +358,12 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
 
                         processes.append((t, w, r, fovno, obj_index, Cvolume, Cmeanferet,
                                           executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
-                                                          GFPObjects, refcentroid, CellObject)))
+                                                          GFPObjects, refcentroid)))
                 print("Processes = ", len(processes))
 
             for it, iw, ir, ifovno, obj_id, cvol, cmferet, process in processes:
                 features = process.result()
-                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol, GwallDist2dms, GwallDist2dSS, GwallDist3dms, GwallDist3dSS = features
+                Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = features
                 # print("gcount:", Gcount)
                 # print("indorient", indorient3D.shape, indorient3D.T.shape)
                 gfp["cpc"][it, iw, 0, ir % 5, ifovno, obj_id] = Gcount
@@ -366,10 +383,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 gfp["raddist2d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d
                 gfp["raddist2dmean"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist2d / cmferet
                 gfp["raddist3d"][it, iw, 0, ir % 5, ifovno, obj_id, :] = Gradial_dist3d
-                gfp["wallDist2dms"][it, iw, 0, ir % 5, ifovno, obj_id] = GwallDist2dms
-                gfp["wallDist2dSS"][it, iw, 0, ir % 5, ifovno, obj_id] = GwallDist2dSS
-                gfp["wallDist3dms"][it, iw, 0, ir % 5, ifovno, obj_id] = GwallDist3dms
-                gfp["wallDist3dSS"][it, iw, 0, ir % 5, ifovno, obj_id] = GwallDist3dSS
 
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
@@ -395,13 +408,29 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
                   gfp["maxferet"], gfp["minferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
                   gfp["orientations"], gfp["zdistr"], gfp["raddist2d"], gfp["raddist2dmean"], gfp["raddist3d"],
-                  gfp["meanvols"], gfp["wallDist2dms"], gfp["wallDist2dSS"], gfp["wallDist3dms"],
-                  gfp["wallDist3dSS"]]
+                  gfp["meanvols"], gfp["wallDist2dms0"], gfp["wallDist2dSS0"], gfp["wallDist3dms0"],
+                  gfp["wallDist3dSS0"], gfp["wallDist2dms1"], gfp["wallDist2dSS1"], gfp["wallDist3dms1"],
+                  gfp["wallDist3dSS1"], gfp["wallDist2dms2"], gfp["wallDist2dSS2"], gfp["wallDist3dms2"],
+                  gfp["wallDist3dSS2"], gfp["wallDist2dms3"], gfp["wallDist2dSS3"], gfp["wallDist3dms3"],
+                  gfp["wallDist3dSS3"], gfp["wallDist2dms4"], gfp["wallDist2dSS4"], gfp["wallDist3dms4"],
+                  gfp["wallDist3dSS4"], gfp["wallDist2dms5"], gfp["wallDist2dSS5"], gfp["wallDist3dms5"],
+                  gfp["wallDist3dSS5"]]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
                     "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
-                    "Mean Volume", "Mean 2D distance to wall", "Stdev 2D distance to wall", "Mean 3D distance to wall",
-                    "Stdev 3D distance to wall"]
+                    "Mean Volume", "Mean 2D distance to wall d=0", "Stdev 2D distance to wall d=0",
+                    "Mean 3D distance to wall d=0",
+                    "Stdev 3D distance to wall d=0", "Mean 2D distance to wall d=1", "Stdev 2D distance to wall d=1",
+                    "Mean 3D distance to wall d=1",
+                    "Stdev 3D distance to wall d=1", "Mean 2D distance to wall d=2", "Stdev 2D distance to wall d=2",
+                    "Mean 3D distance to wall d=2",
+                    "Stdev 3D distance to wall d=2", "Mean 2D distance to wall d=3", "Stdev 2D distance to wall d=3",
+                    "Mean 3D distance to wall d=3",
+                    "Stdev 3D distance to wall d=3", "Mean 2D distance to wall d=4", "Stdev 2D distance to wall d=4",
+                    "Mean 3D distance to wall d=4",
+                    "Stdev 3D distance to wall d=4", "Mean 2D distance to wall d=5", "Stdev 2D distance to wall d=5",
+                    "Mean 3D distance to wall d=5",
+                    "Stdev 3D distance to wall d=5"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True
@@ -414,9 +443,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     # for otype in orgenelletype:
     uselog = [False, False, True]
     for o, (propertytype, otype) in enumerate(zip(propertycategory, orgenelletype)):
-        for i, prop in enumerate(propertytype):
+        for pl, prop in enumerate(propertytype):
             if not dontsave:
-                propertyname = propnames[o][i]
+                propertyname = propnames[o][pl]
                 filename = f"{channel}_{otype}_{propertyname}_{strsigma}.npz"
                 fpath = join(savepath, filename)
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
@@ -430,7 +459,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     print(loaded.files, loaded[loaded.files[0]].shape, prop.shape)
             try:
                 if generateplots:
-                    plotter.violinstripplot(stackdata=prop, channel=otype, propname=propnames[i],
+                    plotter.violinstripplot(stackdata=prop, channel=otype, propname=propnames[pl],
                                             units=experimentalparams.getunits(propertyname),
                                             percentile_include=True, selected_method_type=None, uselog=uselog[o])
             except Exception as e:
