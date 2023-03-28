@@ -203,7 +203,7 @@ def phantom_pad(bbox, slicediff):
     return op_bbox
 
 
-def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, m_dilations=0):
+def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
     Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
@@ -216,30 +216,31 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     :return: mean and std of distance of each pixel from cell border
     """
 
-    if m_dilations:
-        # Dilate bounding boxes for both cell and organelle
-        if org_bbox.shape == cell_bbox.shape:
-            print("organelle bbox not predilated, dilating....")
-            org_bbox = dilate_bbox_uniform(org_bbox, m=m_dilations)
-        cell_bbox = dilate_bbox_uniform(cell_bbox, m=m_dilations)
-        # Dilate boundary only for Cell
-        cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     assert axis < cell_bbox.ndim
-    if usescale and (scales is None):
-        minscale = min([XSCALE, YSCALE])
-        scales = np.array([XSCALE, YSCALE]) / minscale
+    ###################################################################################
+    if usescale:
+        if scales is None:
+            minscale = min([XSCALE, YSCALE])
+            scales = np.array([XSCALE, YSCALE]) / minscale
     else:
         scales = [1, 1]
+    ###################################################################################
     org_bbox = org_bbox > 0
-    # distance map for cell
+    cell_bbox = (cell_bbox > 0) * 1
+    cell_bbox_inv = (cell_bbox == 0) * 1
     dims = cell_bbox.shape
     org_map_n = np.full(cell_bbox.shape, fill_value=np.nan)
+    # distance map for cell
     for z in range(dims[axis]):
         org2d = org_bbox[z, :, :].squeeze()
         cell2d = cell_bbox[z, :, :].squeeze()
-        ed_map = np.minimum(distance_transform_edt(cell2d, sampling=scales) - m_dilations, -m_dilations)
-        # distance map for organelle locations
+        cell2d_inv = cell_bbox_inv[z, :, :].squeeze()
+        # Calculate edt and inverse edt
+        ed_map_in = distance_transform_edt(cell2d, sampling=scales)
+        ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
+        # Combine edt and inverse edt
+        ed_map = ed_map_in - ed_map_out
         mask2d = org2d > 0
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
@@ -252,7 +253,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     return m, s
 
 
-def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None, m_dilations=0):
+def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall in 3D
     :param org_bbox : bounding box with segmented organelle
@@ -260,28 +261,27 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     :param returnmap : returns euclidean distance transform map
     :param usescale :
     :param scales :
-    :param m_dilations :
 
     :return: mean and std of distance of each pixel from cell border
     """
-    if m_dilations:
-        # Dilate bounding boxes for both cell and organelle
-        if org_bbox.shape == cell_bbox.shape:
-            print("organelle bbox not predilated, dilating....")
-            org_bbox = dilate_bbox_uniform(org_bbox, m=m_dilations)
-        cell_bbox = dilate_bbox_uniform(cell_bbox, m=m_dilations)
-        # Dilate boundary only for Cell
-        cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
 
-    # distance map for cell
-    if usescale and (scales is None):
-        minscale = min([ZSCALE, XSCALE, YSCALE])
-        scales = np.array([ZSCALE, XSCALE, YSCALE]) / minscale
+    ###################################################################################
+    if usescale:
+        if scales is None:
+            minscale = min([ZSCALE, XSCALE, YSCALE])
+            scales = np.array([ZSCALE, XSCALE, YSCALE]) / minscale
     else:
         scales = [1, 1, 1]
-    org_bbox = org_bbox > 0
-    ed_map = np.minimum(distance_transform_edt(cell_bbox, sampling=scales) - m_dilations, -m_dilations)
+    ###################################################################################
+
+    cell_bbox = (cell_bbox > 0) * 1
+    cell_bbox_inv = (cell_bbox == 0) * 1
+    # distance map for cell
+    ed_map_in = distance_transform_edt(cell_bbox, sampling=scales)
+    ed_map_out = distance_transform_edt(cell_bbox_inv, sampling=scales)
+    # Combine edt and inverse edt
+    ed_map = ed_map_in - ed_map_out
     # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask
