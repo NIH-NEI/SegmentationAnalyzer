@@ -327,6 +327,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                                                                     stackshape=stackshape)
                             # add phantom pad to mimic a equal dilation
                             gfp_bbox = ShapeMetrics.phantom_pad(img_GFP[d2w_slices], slicediffpad)
+                            cell_bbox = CellObject.copy()
                             if pad_length:
                                 # Dilate bounding boxes for  cell to match organelle
                                 cell_bbox = ShapeMetrics.dilate_bbox_uniform(CellObject, m=pad_length)
@@ -334,9 +335,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 # cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
 
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=gfp_bbox,
-                                                                                                cell_bbox=CellObject)
+                                                                                                cell_bbox=cell_bbox)
                             wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=gfp_bbox,
-                                                                                                cell_bbox=CellObject)
+                                                                                                cell_bbox=cell_bbox)
                             gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
                             gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
                             gfp[f"wallDist3dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_m
@@ -480,7 +481,5 @@ if __name__ == "__main__":
     args = sys.argv
     print(f"args:{args})")
     # exit()
-    # segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/'
-    # segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/Cell/csv/'
-    # savepath = '../Results/2022/May6/cetn2/calcs/'
+    # Example usage python <path-to-repo>/GenerateShapeMetricsBatch.py --
     calculateCellMetrics()
