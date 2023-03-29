@@ -68,9 +68,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     ###############################################
 
     savepathmeta = join(savepath, "meta")
-    assert exists(gfpfolder)
-    assert exists(cellfolder)
-    assert exists(savepath)
+    assert exists(gfpfolder), "GFP folder doesn't exist"
+    assert exists(cellfolder), "cellfolder folder doesn't exist"
+    assert exists(savepath), "Savepath folder doesn't exist"
     if not exists(savepathmeta):
         mkdir(savepathmeta)
 
@@ -137,7 +137,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
     max_pad_length = 6 # use value 1 more than final dilation
     for pl in range(max_pad_length):
-        print(pl)
         gfp[f"wallDist2dms{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"wallDist3dms{pl}"] = np.nan * np.ones(cell["shape"])
@@ -335,11 +334,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 # cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
 
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=gfp_bbox,
-                                                                                                cell_bbox=CellObject,
-                                                                                                m_dilations=pad_length)
+                                                                                                cell_bbox=CellObject)
                             wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=gfp_bbox,
-                                                                                                cell_bbox=CellObject,
-                                                                                                m_dilations=pad_length)
+                                                                                                cell_bbox=CellObject)
                             gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
                             gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
                             gfp[f"wallDist3dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_m

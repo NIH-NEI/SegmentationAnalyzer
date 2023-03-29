@@ -206,18 +206,18 @@ if __name__ == "__main__":
     # Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol, GwallDist2dms, GwallDist2dSS, GwallDist3dms, GwallDist3dSS
     organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, orientations3D, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume = \
         ShapeMetrics.calculate_multiorganelle_properties(organelle_obj, centroid)
-    m_dilations = 2
+    # m_dilations = 2
     d2m, d2s, d2map, d2cbbox = \
-        ShapeMetrics.distance_from_wall_2d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True, m_dilations=m_dilations)
+        ShapeMetrics.distance_from_wall_2d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True)
     d3m, d3s, d3map, d3cbbox = \
-        ShapeMetrics.distance_from_wall_3d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True, m_dilations=m_dilations)
+        ShapeMetrics.distance_from_wall_3d(org_bbox=organelle_obj, cell_bbox=cellobj, returnmap=True)
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
     if savell:
         OmeTiffWriter.save(data=cell, uri=savepath + "synthcell_scaled.tiff", overwrite_file=True)
-        OmeTiffWriter.save(data=d2map, uri=savepath + f"d2map_scaled_{m_dilations}.tiff", overwrite_file=True)
-        OmeTiffWriter.save(data=d3map, uri=savepath + f"d3map_scaled_{m_dilations}.tiff", overwrite_file=True)
-        OmeTiffWriter.save(data=d2cbbox, uri=savepath + f"d2map_cbbox_{m_dilations}.tiff", overwrite_file=True)
-        OmeTiffWriter.save(data=d3cbbox, uri=savepath + f"d3map_cbbox_{m_dilations}.tiff", overwrite_file=True)
+        # OmeTiffWriter.save(data=d2map, uri=savepath + f"d2map_scaled_{m_dilations}.tiff", overwrite_file=True)
+        # OmeTiffWriter.save(data=d3map, uri=savepath + f"d3map_scaled_{m_dilations}.tiff", overwrite_file=True)
+        # OmeTiffWriter.save(data=d2cbbox, uri=savepath + f"d2map_cbbox_{m_dilations}.tiff", overwrite_file=True)
+        # OmeTiffWriter.save(data=d3cbbox, uri=savepath + f"d3map_cbbox_{m_dilations}.tiff", overwrite_file=True)
     # 0.13906296296296297 0.8373936702642482
     # 0.07602171534849127 0.4781034519114344
     if printall:
