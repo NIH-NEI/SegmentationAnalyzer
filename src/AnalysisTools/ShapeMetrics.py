@@ -192,13 +192,13 @@ def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
 
 def phantom_pad(bbox, slicediff):
     """
-    Pads the box with given pad
+    Pads the box with given pad dimensions
     :param bbox:
     :param slicediff:
     :return:
     """
-    assert bbox.ndim == len(
-        slicediff), f"dimensions for bbox and slicediff must match, currently bbox:{bbox.ndim}, slicediff:{len(slicediff)}"
+    assert bbox.ndim == len(slicediff), f"dimensions for bbox and slicediff must match, " \
+                                        f"currently bbox:{bbox.ndim}, slicediff:{len(slicediff)}"
     op_bbox = np.pad(bbox, pad_width=slicediff)
     return op_bbox
 
@@ -229,6 +229,8 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     org_bbox = org_bbox > 0
     cell_bbox = (cell_bbox > 0) * 1
     cell_bbox_inv = (cell_bbox == 0) * 1
+    # print(f"DEBUG: cell:{np.shape(cell_bbox), np.count_nonzero(cell_bbox)}, "
+    #       f"cellinv:{np.shape(cell_bbox_inv), np.count_nonzero(cell_bbox_inv)}")
     dims = cell_bbox.shape
     org_map_n = np.full(cell_bbox.shape, fill_value=np.nan)
     # distance map for cell
@@ -241,6 +243,9 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
         ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
         # Combine edt and inverse edt
         ed_map = ed_map_in - ed_map_out
+        # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
+        #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
+        #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
         mask2d = org2d > 0
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
@@ -277,11 +282,17 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
 
     cell_bbox = (cell_bbox > 0) * 1
     cell_bbox_inv = (cell_bbox == 0) * 1
+    # print(f"DEBUG: cell:{np.shape(cell_bbox), np.count_nonzero(cell_bbox)}, "
+    #       f"cellinv:{np.shape(cell_bbox_inv), np.count_nonzero(cell_bbox_inv)}")
+    #
     # distance map for cell
     ed_map_in = distance_transform_edt(cell_bbox, sampling=scales)
     ed_map_out = distance_transform_edt(cell_bbox_inv, sampling=scales)
     # Combine edt and inverse edt
     ed_map = ed_map_in - ed_map_out
+    # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
+    #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
+    #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
     # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask

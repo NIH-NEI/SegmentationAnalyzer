@@ -213,7 +213,13 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
     if totype == "csv":
         try:
             for datafile in datafiles:
-                GFPchannel, organelletype, propertyname, strsigma = os.path.basename(datafile[:-4]).split("_")
+                try:
+                    GFPchannel, organelletype, propertyname, strsigma = os.path.basename(datafile[:-4]).split("_")
+                except:
+                    try:
+                        GFPchannel, organelletype, propertyname = os.path.basename(datafile[:-4]).split("_")
+                    except:
+                        print(f"Could not resolve file name: {datafile[:-4]}")
                 if propertyname == "Mean Volume" or propertyname == "Count per cell" or propertyname.__contains__(
                         "distance to wall"):
                     organelletype = "Cell"  # TEMP use in cell data
@@ -242,7 +248,7 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                             usestackdata = loadedstackdata[..., proptypes.index(proptype)]
                         else:
                             usestackdata = loadedstackdata
-                        print(datafile, ":::", GFPchannel, organelletype, usepropname, strsigma, proptype,
+                        print(datafile, ":::", GFPchannel, organelletype, usepropname, proptype,
                               usestackdata.shape, loadedstackdata.shape)
                         array3ddf = datautils.generateindexeddataframe(usestackdata, usepropname)
 

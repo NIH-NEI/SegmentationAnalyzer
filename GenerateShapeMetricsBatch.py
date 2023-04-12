@@ -135,7 +135,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["raddist2d"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist2dmean"] = np.nan * np.ones(gfp["shape"])
     gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
-    max_pad_length = 6 # use value 1 more than final dilation
+    max_pad_length = 6  # use value 1 more than final dilation
     for pl in range(max_pad_length):
         gfp[f"wallDist2dms{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
@@ -327,16 +327,20 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                                                                     stackshape=stackshape)
                             # add phantom pad to mimic a equal dilation
                             gfp_bbox = ShapeMetrics.phantom_pad(img_GFP[d2w_slices], slicediffpad)
+                            # print(f"padl:{pad_length}, d2w{d2w_slices}, "
+                            #       f"sldiffpad{slicediffpad}, shift{shifted_slice_idx}")
                             cell_bbox = CellObject.copy()
                             if pad_length:
                                 # Dilate bounding boxes for  cell to match organelle
                                 cell_bbox = ShapeMetrics.dilate_bbox_uniform(CellObject, m=pad_length)
                                 # Dilate boundary only for Cell - unnecessary with new method
-                                # cell_bbox = dilate_boundary(cell_bbox, m=m_dilations)
-
-                            wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=gfp_bbox,
+                                dilated_cell_bbox = ShapeMetrics.dilate_boundary(cell_bbox, m=pad_length)
+                                mask_gfp_bbox = gfp_bbox & dilated_cell_bbox
+                            else:
+                                mask_gfp_bbox = gfp_bbox & cell_bbox
+                            wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=mask_gfp_bbox,
                                                                                                 cell_bbox=cell_bbox)
-                            wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=gfp_bbox,
+                            wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=mask_gfp_bbox,
                                                                                                 cell_bbox=cell_bbox)
                             gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
                             gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
@@ -423,7 +427,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
                     "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
-                    "Mean Volume", "Mean 2D d istance to wall d0", "Stdev 2D distance to wall d0",
+                    "Mean Volume", "Mean 2D distance to wall d0", "Stdev 2D distance to wall d0",
                     "Mean 3D distance to wall d0",
                     "Stdev 3D distance to wall d0", "Mean 2D distance to wall d1", "Stdev 2D distance to wall d1",
                     "Mean 3D distance to wall d1",
@@ -451,7 +455,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
         for i, prop in enumerate(propertytype):
             if not dontsave:
                 propertyname = propnames[o][i]
-                filename = f"{channel}_{otype}_{propertyname}_{strsigma}.npz"
+                # filename = f"{channel}_{otype}_{propertyname}_{strsigma}.npz"
+                filename = f"{channel}_{otype}_{propertyname}.npz"
                 fpath = join(savepath, filename)
                 stackio.saveproperty(prop, filepath=fpath, type="npz")
                 loaded = stackio.loadproperty(fpath)
