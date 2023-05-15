@@ -8,7 +8,6 @@ from aicsimageio import AICSImage
 from skimage.measure import label as skilbl
 # from aicsimageio.writers import OmeTiffWriter
 from tifffile import imread
-
 from src.AnalysisTools import datautils
 from src.AnalysisTools.dtypes import *
 from src.stackio import labelledcsvhandler

@@ -1,14 +1,11 @@
 import datetime
 import traceback
-from os import mkdir
-from os.path import join, exists, isdir
-
 import click
+from os import mkdir
 import numpy as np
 import pandas as pd
+from os.path import join, exists, isdir
 from scipy.ndimage import find_objects  # ,label
-
-# from src.stackio import metadataHandler as meta
 from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
 from src.AnalysisTools.dtypes import PathLike
 from src.Visualization import plotter, cellstack
@@ -319,7 +316,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                  add_3d_cell_outline=False)
                         # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, \
-                        Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = ShapeMetrics.calculate_multiorganelle_properties(GFPObjects, Ccentroid)
+                            Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = ShapeMetrics.calculate_multiorganelle_properties(
+                            GFPObjects, Ccentroid)
                         # print("gcount:", Gcount)
                         # print("indorient", indorient3D.shape, indorient3D.T.shape)
                         gfp["cpc"][t, w, 0, r % 5, fovno, obj_index] = Gcount

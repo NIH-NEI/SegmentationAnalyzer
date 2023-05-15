@@ -4,7 +4,8 @@ import numpy as np
 import pandas
 import tifffile
 
-def csvtoids(csvname, shape =None, save=False, returnvals=True, debug=False):
+
+def csvtoids(csvname, shape=None, save=False, returnvals=True, debug=False):
     """
 
     :param csvname:

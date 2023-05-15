@@ -1,11 +1,12 @@
 import os
-from src.stackio import stackio
-import seaborn as sns
-from src.AnalysisTools import statcalcs, datautils
 import numpy as np
 import pandas as pd
 import re
 import matplotlib.pyplot as plt
+from src.stackio import stackio
+import seaborn as sns
+from src.AnalysisTools import statcalcs, datautils
+
 savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
 flist_plt = [f for f in os.listdir(savepath_tmm20) if f.__contains__('.npz')]
 print(flist_plt)
@@ -20,9 +21,9 @@ for f in flist_plt:
     fpath = os.path.join(savepath_tmm20, f)
     organelle, propertyname, _ = re.split(r'[_.]', f)
     stackdata = stackio.loadproperty(fpath)
-    print("before",stackdata.shape,flush=True)
+    print("before", stackdata.shape, flush=True)
     stackdata = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=0)
-    print("after",stackdata.shape,flush=True)
+    print("after", stackdata.shape, flush=True)
 
     dims = stackdata.ndim
     # stackdata_indiv = statcalcs.stackbyabstractionlevel(stackdata, abstraction=0, fixeddims=4)
@@ -36,10 +37,11 @@ for f in flist_plt:
     # print(indexedstack)
     # sns.stripplot(stackdata=indexedstack, channel=organelle, propname=propertyname, savepath=savepath_tmm20)
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))  # , sharey=True)
-    sns.stripplot(x="Line name", y=propertyname, hue="transwell no.", jitter=0.2, alpha=1, data=indexedstack, dodge=True, linewidth=1, edgecolor='black', zorder=1)
+    sns.stripplot(x="Line name", y=propertyname, hue="transwell no.", jitter=0.2, alpha=1, data=indexedstack,
+                  dodge=True, linewidth=1, edgecolor='black', zorder=1)
     if sigma is not None:
-        plt.savefig( f"{savepath_tmm20}{organelle}_{propertyname}_{sigma}.png")
+        plt.savefig(f"{savepath_tmm20}{organelle}_{propertyname}_{sigma}.png")
     else:
-        plt.savefig( f"{savepath_tmm20}{organelle}_{propertyname}.png")
+        plt.savefig(f"{savepath_tmm20}{organelle}_{propertyname}.png")
     plt.close()
     plt.clf()

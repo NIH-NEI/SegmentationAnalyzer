@@ -219,6 +219,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     assert axis < cell_bbox.ndim
     ###################################################################################
+    minscale = None
     if usescale:
         if scales is None:
             minscale = min([XSCALE, YSCALE])
@@ -241,6 +242,8 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
         # Calculate edt and inverse edt
         ed_map_in = distance_transform_edt(cell2d, sampling=scales)
         ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
+        print("edmapin: ", np.unique(ed_map_in), "edmap: ", np.unique(ed_map), "edmapout: ", np.unique(ed_map_out))
+        print(f"minscale: {minscale}")
         # Combine edt and inverse edt
         ed_map = ed_map_in - ed_map_out
         # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
@@ -250,7 +253,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
         # average and sd
-    org_map_nonzero = org_map_n[np.nonzero(org_map_n)]
+    org_map_nonzero = org_map_n[np.nonzero(org_bbox)]
     m = np.mean(org_map_nonzero) * minscale
     s = np.std(org_map_nonzero) * minscale
     if returnmap:
@@ -272,6 +275,7 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
 
     ###################################################################################
+    minscale = None
     if usescale:
         if scales is None:
             minscale = min([ZSCALE, XSCALE, YSCALE])
@@ -290,6 +294,8 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     ed_map_out = distance_transform_edt(cell_bbox_inv, sampling=scales)
     # Combine edt and inverse edt
     ed_map = ed_map_in - ed_map_out
+    print("edmapin: ", np.unique(ed_map_in), "edmap: ", np.unique(ed_map), "edmapout: ", np.unique(ed_map_out))
+    print(f"minscale: {minscale}")
     # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
     #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
     #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
@@ -297,7 +303,7 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     mask = org_bbox > 0
     org_map = ed_map * mask
     # average and sd
-    org_map_nonzero = org_map[np.nonzero(org_map)]
+    org_map_nonzero = org_map[np.nonzero(org_bbox)]
     m = np.mean(org_map_nonzero) * minscale
     s = np.std(org_map_nonzero) * minscale
     if returnmap:
@@ -425,7 +431,7 @@ def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+        orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
 
 
 if __name__ == "__main__":

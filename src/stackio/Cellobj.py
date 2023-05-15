@@ -1,18 +1,15 @@
-
-
-
 class Cell():
     def __init__(self, inputchannelname=None):
         self.gfp = GFP()
-        self.selected = True # by default
+        self.selected = True  # by default
         self.nuclei = Nucleus()
-        #generate cell, dna and gfp
+        # generate cell, dna and gfp
         pass
 
     @property
     def id(self):
         pass
-    
+
     @property
     def volume(self):
         pass
@@ -53,12 +50,14 @@ class Cell():
     def selected(self):
         return self.selected
 
+
 class Nucleus():
     def __init__(self):
-        #generate cell, dna and gfp
+        # generate cell, dna and gfp
         pass
+
 
 class GFP():
     def __init__(self, inputchannelname=None):
-        #generate cell, dna and gfp
+        # generate cell, dna and gfp
         pass

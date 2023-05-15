@@ -1,7 +1,6 @@
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy
+from pathlib import Path
 from scipy.spatial import ConvexHull
 from tifffile import imread
 
