@@ -7,6 +7,7 @@ from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.ndimage import distance_transform_edt, binary_dilation
 from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
+from aicsimageio.writers import OmeTiffWriter
 
 from src.AnalysisTools import conv_hull
 from src.AnalysisTools import experimentalparams as ep
@@ -180,6 +181,8 @@ def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
         start = max(start_0, 0)
         stop = min(stop_0, stackshape[i])
         new_slice = slice(start, stop, ip_slice.step)
+        # if ignore_first_dim and i == 0:
+        #     new_slice = ip_slice
         modified_slice_obj.append(new_slice)
         # diffpad value can only be positive as we can only remove values
         slicediff = (np.abs(start - start_0), np.abs(stop - stop_0))
@@ -203,7 +206,7 @@ def phantom_pad(bbox, slicediff):
     return op_bbox
 
 
-def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None):
+def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, temppath=""):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
     Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
@@ -219,11 +222,11 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
     assert axis < cell_bbox.ndim
     ###################################################################################
-    minscale = None
+    # minscale = None
     if usescale:
         if scales is None:
-            minscale = min([XSCALE, YSCALE])
-            scales = np.array([XSCALE, YSCALE]) / minscale
+            # minscale = min([XSCALE, YSCALE])
+            scales = np.array([XSCALE, YSCALE])  # / minscale
     else:
         scales = [1, 1]
     ###################################################################################
@@ -231,37 +234,56 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     cell_bbox = (cell_bbox > 0) * 1
     cell_bbox_inv = (cell_bbox == 0) * 1
     # print(f"DEBUG: cell:{np.shape(cell_bbox), np.count_nonzero(cell_bbox)}, "
-    #       f"cellinv:{np.shape(cell_bbox_inv), np.count_nonzero(cell_bbox_inv)}")
+    #       f"cellinv:{np.shape(cell_bbox_inv), np.count_nonzero(cell_bbox_inv)}, "
+    #       f"SUM: {np.count_nonzero(cell_bbox) + np.count_nonzero(cell_bbox_inv)}")
     dims = cell_bbox.shape
     org_map_n = np.full(cell_bbox.shape, fill_value=np.nan)
     # distance map for cell
     for z in range(dims[axis]):
+        ed_map_out, ed_map_in = None, None
         org2d = org_bbox[z, :, :].squeeze()
         cell2d = cell_bbox[z, :, :].squeeze()
         cell2d_inv = cell_bbox_inv[z, :, :].squeeze()
+
+        if len(np.unique(cell2d)) < 2:
+            ed_map_in = np.zeros_like(cell2d)
+            # print(f"skipping z = {z}, uniques: {np.unique(cell2d)}, {np.unique(org2d)}")
+        else:
+            ed_map_in = distance_transform_edt(cell2d, sampling=scales)
+
         # Calculate edt and inverse edt
-        ed_map_in = distance_transform_edt(cell2d, sampling=scales)
-        ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
-        print("edmapin: ", np.unique(ed_map_in), "edmap: ", np.unique(ed_map), "edmapout: ", np.unique(ed_map_out))
-        print(f"minscale: {minscale}")
+        if len(np.unique(cell2d_inv)) < 2:
+            ed_map_out = np.zeros_like(cell2d_inv)
+            # print(f"skipping z = {z}, uniques: {np.unique(cell2d)}, {np.unique(org2d)}")
+        else:
+            ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
         # Combine edt and inverse edt
         ed_map = ed_map_in - ed_map_out
+        # print("MIN edmapin: ", np.min(ed_map_in), "edmap: ", np.min(ed_map), "edmapout: ", np.min(ed_map_out), end="\t")
+        # print("MAX edmapin: ", np.max(ed_map_in), "edmap: ", np.max(ed_map), "edmapout: ", np.max(ed_map_out), end="\t")
+        # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
+        #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
+        #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
+        # print(f"minscale: {minscale}")
         # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
         #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
         #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
         mask2d = org2d > 0
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
+    # print(f"MASK2d:MINorgmap: {np.min(org_map_n)}, MAXorgmap: {np.max(org_map_n)}")
         # average and sd
+
+    # OmeTiffWriter.save(data=org_map_n, uri=f"{temppath}_orgmapn2d.tiff", overwrite_file=True)
     org_map_nonzero = org_map_n[np.nonzero(org_bbox)]
-    m = np.mean(org_map_nonzero) * minscale
-    s = np.std(org_map_nonzero) * minscale
+    m = np.mean(org_map_nonzero)  # * minscale
+    s = np.std(org_map_nonzero)  # * minscale
     if returnmap:
         return m, s, org_map_n, cell_bbox
     return m, s
 
 
-def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None):
+def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None, temppath=""):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall in 3D
     :param org_bbox : bounding box with segmented organelle
@@ -275,37 +297,40 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
 
     ###################################################################################
-    minscale = None
+    # minscale = None
     if usescale:
         if scales is None:
-            minscale = min([ZSCALE, XSCALE, YSCALE])
-            scales = np.array([ZSCALE, XSCALE, YSCALE]) / minscale
+            # minscale = min([ZSCALE, XSCALE, YSCALE])
+            scales = np.array([ZSCALE, XSCALE, YSCALE])  # / minscale
     else:
         scales = [1, 1, 1]
     ###################################################################################
 
     cell_bbox = (cell_bbox > 0) * 1
     cell_bbox_inv = (cell_bbox == 0) * 1
-    # print(f"DEBUG: cell:{np.shape(cell_bbox), np.count_nonzero(cell_bbox)}, "
-    #       f"cellinv:{np.shape(cell_bbox_inv), np.count_nonzero(cell_bbox_inv)}")
-    #
+    # print(f"DEBUG: cell:{np.shape(cell_bbox)}, {np.count_nonzero(cell_bbox)}, "
+    #       f"cellinv:{np.shape(cell_bbox_inv)},{np.count_nonzero(cell_bbox_inv)}, "
+    #       f"SUM: {np.count_nonzero(cell_bbox) + np.count_nonzero(cell_bbox_inv)}")
     # distance map for cell
     ed_map_in = distance_transform_edt(cell_bbox, sampling=scales)
     ed_map_out = distance_transform_edt(cell_bbox_inv, sampling=scales)
     # Combine edt and inverse edt
     ed_map = ed_map_in - ed_map_out
-    print("edmapin: ", np.unique(ed_map_in), "edmap: ", np.unique(ed_map), "edmapout: ", np.unique(ed_map_out))
-    print(f"minscale: {minscale}")
+    # print("MIN edmapin: ", np.min(ed_map_in), "edmap: ", np.min(ed_map), "edmapout: ", np.min(ed_map_out))
+    # print("MAX edmapin: ", np.max(ed_map_in), "edmap: ", np.max(ed_map), "edmapout: ", np.max(ed_map_out))
     # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
     #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
     #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
     # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask
+    # print(f"MASK3d, MINorgmap: {np.min(org_map)}, MAXorgmap: {np.max(org_map)}")
     # average and sd
+    # OmeTiffWriter.save(data=org_map, uri=f"{temppath}_orgmap3d.tiff", overwrite_file=True)
+
     org_map_nonzero = org_map[np.nonzero(org_bbox)]
-    m = np.mean(org_map_nonzero) * minscale
-    s = np.std(org_map_nonzero) * minscale
+    m = np.mean(org_map_nonzero)  # * minscale
+    s = np.std(org_map_nonzero)  # * minscale
     if returnmap:
         return m, s, org_map, cell_bbox
     return m, s
@@ -431,7 +456,7 @@ def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-        orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
 
 
 if __name__ == "__main__":

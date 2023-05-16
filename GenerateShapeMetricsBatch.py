@@ -322,22 +322,29 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
 
                         # NOTE: This is currently necessary for calculation of distance to wall metrics
                         for pad_length in range(max_pad_length):
-                            d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices,
-                                                                                                    pad_length=pad_length,
-                                                                                                    stackshape=stackshape)
+                            d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices, pad_length=pad_length, stackshape=stackshape)
                             # add phantom pad to mimic a equal dilation
                             gfp_bbox = ShapeMetrics.phantom_pad(img_GFP[d2w_slices], slicediffpad)
                             # print(f"padl:{pad_length}, d2w{d2w_slices}, "
                             #       f"sldiffpad{slicediffpad}, shift{shifted_slice_idx}")
                             cell_bbox = CellObject.copy()
+                            # print(f"pad_length: {pad_length},  gfp_bbox: {gfp_bbox.shape}, cell_bbox shape: {cell_bbox.shape}, stackshape:{stackshape}")
                             if pad_length:
                                 # Dilate bounding boxes for  cell to match organelle
                                 cell_bbox = ShapeMetrics.dilate_bbox_uniform(CellObject, m=pad_length)
                                 # Dilate boundary only for Cell - unnecessary with new method
                                 dilated_cell_bbox = ShapeMetrics.dilate_boundary(cell_bbox, m=pad_length)
                                 mask_gfp_bbox = gfp_bbox & dilated_cell_bbox
+                                # cellstack.OmeTiffWriter.save(data=mask_gfp_bbox*1, uri=f"{savepath}/debug/mask_gfp_{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+                                # cellstack.OmeTiffWriter.save(data=dilated_cell_bbox*1, uri=f"{savepath}/debug/dilatedcell_{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+                                # cellstack.OmeTiffWriter.save(data=dilated_cell_bbox*1 -cell_bbox*1, uri=f"{savepath}/debug/dilation_{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+                                # print(f"slicediffpad: {slicediffpad},  slices: {slices}, d2wslices: {d2w_slices}, shifted_slice_idx {shifted_slice_idx } ")
+                                # print(f"mask_gfp_bbox: {mask_gfp_bbox.shape},  orig_gfp_bbox: {img_GFP[d2w_slices].shape }, dilated_cell_bbox: {dilated_cell_bbox.shape} ")
                             else:
                                 mask_gfp_bbox = gfp_bbox & cell_bbox
+                            cellstack.OmeTiffWriter.save(data=cell_bbox*1, uri=f"{savepath}/debug/cellbbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+                            # cellstack.OmeTiffWriter.save(data=gfp_bbox*1, uri=f"{savepath}/debug/gfp_bbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=mask_gfp_bbox,
                                                                                                 cell_bbox=cell_bbox)
                             wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=mask_gfp_bbox,
