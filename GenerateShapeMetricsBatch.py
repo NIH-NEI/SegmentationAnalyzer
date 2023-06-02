@@ -342,7 +342,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 # print(f"mask_gfp_bbox: {mask_gfp_bbox.shape},  orig_gfp_bbox: {img_GFP[d2w_slices].shape }, dilated_cell_bbox: {dilated_cell_bbox.shape} ")
                             else:
                                 mask_gfp_bbox = gfp_bbox & cell_bbox
-                            cellstack.OmeTiffWriter.save(data=cell_bbox*1, uri=f"{savepath}/debug/cellbbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+                            # cellstack.OmeTiffWriter.save(data=cell_bbox*1, uri=f"{savepath}/debug/cellbbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
                             # cellstack.OmeTiffWriter.save(data=gfp_bbox*1, uri=f"{savepath}/debug/gfp_bbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
 
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=mask_gfp_bbox,

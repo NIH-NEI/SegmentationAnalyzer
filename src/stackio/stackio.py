@@ -319,7 +319,7 @@ if __name__ == "__main__":
     #     csvfilename = f"{organelle}_{propertyname}.csv"
     #     csvpath = os.path.join(savepath_tmm20, csvfilename)
     #     check = indexedstack.dropna().to_csv(csvpath)
-    """
+    """f
     convertfromdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb18/TOM/results_all/npz/'
     targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Mar18/combinecsv/'
     
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     #####################################################################################
     """
     # LOOP todo:1.  MYH MYH, 2. CETN2 CETN2
-    dirlist = 'D:/WORK/NIH_new_work/Final_calc_3/'
+    dirlist = 'D:/WORK/NIH_new_work/CTNNB1_20230522/GJA/'
     # targetdir = 'D:/WORK/NIH_new_work/Final_calculations/'
     subdirs = os.listdir(dirlist)
     print(subdirs)
