@@ -216,11 +216,16 @@ def z_dist_from_bottom(org_bbox, cell_bbox):
     """
     cell_voxels = np.transpose(np.nonzero(cell_bbox))
     lowest_z_coord = cell_voxels[:, 0].min()
+    highest_z_coord = cell_voxels[:, 0].max()
+
     organelle_voxels = np.transpose(np.nonzero(org_bbox))
-    z_distances = np.abs(organelle_voxels[:, 0] - lowest_z_coord)
-    z_dists_mean = z_distances.mean() * ZSCALE
-    z_dists_std = z_distances.std() * ZSCALE
-    return z_dists_mean, z_dists_std
+    z_distances_bot = np.abs(organelle_voxels[:, 0] - lowest_z_coord)
+    z_distances_top = np.abs(highest_z_coord - organelle_voxels[:, 0])
+    z_dists_bot_mean = z_distances_bot.mean() * ZSCALE
+    z_dists_bot_std = z_distances_bot.std() * ZSCALE
+    z_dists_top_mean = z_distances_top.mean() * ZSCALE
+    z_dists_top_std = z_distances_top.std() * ZSCALE
+    return z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std
 
 
 def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, temppath=""):
