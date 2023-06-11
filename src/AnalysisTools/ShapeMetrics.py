@@ -187,7 +187,6 @@ def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
         # diffpad value can only be positive as we can only remove values
         slicediff = (np.abs(start - start_0), np.abs(stop - stop_0))
         slicediffs.append(slicediff)
-        #
         shifted_slice = slice(pad_length, ip_slice.stop - ip_slice.start + pad_length, ip_slice.step)
         ideal_shifted_slice.append(shifted_slice)
     return tuple(modified_slice_obj), slicediffs, tuple(ideal_shifted_slice)
@@ -204,6 +203,24 @@ def phantom_pad(bbox, slicediff):
                                         f"currently bbox:{bbox.ndim}, slicediff:{len(slicediff)}"
     op_bbox = np.pad(bbox, pad_width=slicediff)
     return op_bbox
+
+
+def z_dist_from_bottom(org_bbox, cell_bbox):
+    """
+    Takes the minimum coordinate in cell and subtracts from all organelle values - this provides the distance
+    from bottom of the cell. Returns a mean and standard deviation.
+
+    :param org_bbox:
+    :param cell_bbox:
+    :return:
+    """
+    cell_voxels = np.transpose(np.nonzero(cell_bbox))
+    lowest_z_coord = cell_voxels[:, 0].min()
+    organelle_voxels = np.transpose(np.nonzero(org_bbox))
+    z_distances = np.abs(organelle_voxels[:, 0] - lowest_z_coord)
+    z_dists_mean = z_distances.mean() * ZSCALE
+    z_dists_std = z_distances.std() * ZSCALE
+    return z_dists_mean, z_dists_std
 
 
 def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, temppath=""):
@@ -272,7 +289,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
     # print(f"MASK2d:MINorgmap: {np.min(org_map_n)}, MAXorgmap: {np.max(org_map_n)}")
-        # average and sd
+    # average and sd
 
     # OmeTiffWriter.save(data=org_map_n, uri=f"{temppath}_orgmapn2d.tiff", overwrite_file=True)
     org_map_nonzero = org_map_n[np.nonzero(org_bbox)]
@@ -360,6 +377,11 @@ def getsphericity(bboxdata, volume):
 
 
 def organellecentroid_samerefframe(bboxdata):
+    """
+
+    :param bboxdata: bounding box with binary segmentation
+    :return: centroid coordinates scaled
+    """
     bboxdatabw = (bboxdata > 0)
     centroid = np.multiply(np.asarray(center_of_mass(bboxdatabw)), np.array([ZSCALE, XSCALE, YSCALE]))
     return centroid
@@ -372,8 +394,6 @@ def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
 
     :param org_bboxdata: 3D data in padded region of interest
     :param ref_centroid: location of cell or dna centroid
-    :param cellobj:
-    :param d2wbbox:
 
     :return:
     Returns the following metrics

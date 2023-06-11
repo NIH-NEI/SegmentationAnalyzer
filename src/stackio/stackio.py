@@ -220,7 +220,7 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                     except:
                         print(f"Could not resolve file name: {datafile[:-4]}")
                 if propertyname == "Mean Volume" or propertyname == "Count per cell" or propertyname.__contains__(
-                        "distance to wall"):
+                        "distance to wall") or propertyname.__contains__("z-distance d"):
                     organelletype = "Cell"  # TEMP use in cell data
                 proptypes = [None]
                 usepropname = propertyname

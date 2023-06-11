@@ -93,9 +93,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     cell["yspan"] = np.nan * np.ones(cell["shape"])
     cell["zspan"] = np.nan * np.ones(cell["shape"])
     cell["miparea"] = np.nan * np.ones(cell["shape"])
-    cell["maxferet"] = np.nan * np.ones(cell["shape"])
     cell["aspectratio2d"] = np.nan * np.ones(cell["shape"])
     cell["minferet"] = np.nan * np.ones(cell["shape"])
+    cell["meanferet"] = np.nan * np.ones(cell["shape"])
+    cell["maxferet"] = np.nan * np.ones(cell["shape"])
     cell["sphericity"] = np.nan * np.ones(cell["shape"])
 
     dna = {}
@@ -107,8 +108,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     dna["yspan"] = np.nan * np.ones(dna["shape"])
     dna["zspan"] = np.nan * np.ones(dna["shape"])
     dna["miparea"] = np.nan * np.ones(dna["shape"])
-    dna["maxferet"] = np.nan * np.ones(dna["shape"])
     dna["minferet"] = np.nan * np.ones(dna["shape"])
+    dna["meanferet"] = np.nan * np.ones(dna["shape"])
+    dna["maxferet"] = np.nan * np.ones(dna["shape"])
     dna["sphericity"] = np.nan * np.ones(dna["shape"])
     dna["aspectratio2d"] = np.nan * np.ones(dna["shape"])
     dna["volume_fraction"] = np.nan * np.ones(dna["shape"])
@@ -125,8 +127,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     gfp["yspan"] = np.nan * np.ones(gfp["shape"])
     gfp["zspan"] = np.nan * np.ones(gfp["shape"])
     gfp["miparea"] = np.nan * np.ones(gfp["shape"])
-    gfp["maxferet"] = np.nan * np.ones(gfp["shape"])
     gfp["minferet"] = np.nan * np.ones(gfp["shape"])
+    gfp["meanferet"] = np.nan * np.ones(gfp["shape"])
+    gfp["maxferet"] = np.nan * np.ones(gfp["shape"])
     gfp["aspectratio2d"] = np.nan * np.ones(gfp["shape"])
     gfp["orientations"] = np.nan * np.ones(gfp["shape3d"])
     gfp["cpc"] = np.nan * np.ones(cell["shape"])  # Note: Uses shape from cell
@@ -138,9 +141,11 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     max_pad_length = 6  # use value 1 more than final dilation
     for pl in range(max_pad_length):
         gfp[f"wallDist2dms{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"wallDist3dms{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"wallDist3dSS{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"meanzdist{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"stdzdist{pl}"] = np.nan * np.ones(cell["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -260,8 +265,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             cell["zspan"][t, w, 0, r % 5, fovno, cell_index] = Czspan
                             cell["miparea"][t, w, 0, r % 5, fovno, cell_index] = Cmiparea
                             cell["sphericity"][t, w, 0, r % 5, fovno, cell_index] = Csphericity
-                            cell["maxferet"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet
                             cell["minferet"][t, w, 0, r % 5, fovno, cell_index] = Cminferet
+                            cell["meanferet"][t, w, 0, r % 5, fovno, cell_index] = Cmeanferet
+                            cell["maxferet"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet
                             cell["Centroids"][t, w, 0, r % 5, fovno, cell_index] = Ccentroid
                             cell["aspectratio2d"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet / Cminferet
                             # meta.createcelldict()
@@ -310,8 +316,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 dna["zspan"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dzspan
                                 dna["miparea"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmiparea
                                 dna["sphericity"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dsphericity
-                                dna["maxferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet
                                 dna["minferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dminferet
+                                dna["meanferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmeanferet
+                                dna["maxferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet
                                 dna["aspectratio2d"][
                                     t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet / Dminferet
                                 dna["volume_fraction"][
@@ -322,7 +329,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
 
                         # NOTE: This is currently necessary for calculation of distance to wall metrics
                         for pad_length in range(max_pad_length):
-                            d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices, pad_length=pad_length, stackshape=stackshape)
+                            d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices,
+                                                                                                    pad_length=pad_length,
+                                                                                                    stackshape=stackshape)
                             # add phantom pad to mimic a equal dilation
                             gfp_bbox = ShapeMetrics.phantom_pad(img_GFP[d2w_slices], slicediffpad)
                             # print(f"padl:{pad_length}, d2w{d2w_slices}, "
@@ -344,6 +353,12 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 mask_gfp_bbox = gfp_bbox & cell_bbox
                             # cellstack.OmeTiffWriter.save(data=cell_bbox*1, uri=f"{savepath}/debug/cellbbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
                             # cellstack.OmeTiffWriter.save(data=gfp_bbox*1, uri=f"{savepath}/debug/gfp_bbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
+
+                            z_dists_mean, z_dists_std = ShapeMetrics.z_dist_from_bottom(org_bbox=mask_gfp_bbox,
+                                                                                        cell_bbox=cell_bbox)
+
+                            gfp[f"meanzdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_mean
+                            gfp[f"stdzdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_std
 
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=mask_gfp_bbox,
                                                                                                 cell_bbox=cell_bbox)
@@ -390,8 +405,9 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 gfp["yspan"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gyspan
                 gfp["zspan"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gzspan
                 gfp["miparea"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmiparea
-                gfp["maxferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet
                 gfp["minferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gminferet
+                gfp["meanferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmeanferet
+                gfp["maxferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet
                 gfp["aspectratio2d"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet / Gminferet
                 gfp["volfrac"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gvolume / cvol * 100
                 gfp["orientations"][it, iw, 0, ir % 5, fovno, cell_id, :] = Gorient3D
@@ -411,18 +427,18 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
         time.sleep(120)
 
     allCellvals = [cell["Centroids"], cell["Volumes"], cell["xspan"], cell["yspan"], cell["zspan"], cell["miparea"],
-                   cell["maxferet"], cell["minferet"], cell["aspectratio2d"], cell["sphericity"]]  ##
+                   cell["maxferet"], cell["minferet"], cell["meanferet"], cell["aspectratio2d"], cell["sphericity"]]  ##
     cellpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                     "2D Aspect ratio", "Sphericity"]
+                     "Mean feret", "2D Aspect ratio", "Sphericity"]
 
     allDNAvals = [dna["Centroids"], dna["Volumes"], dna["xspan"], dna["yspan"], dna["zspan"], dna["miparea"],
-                  dna["maxferet"], dna["minferet"], dna["aspectratio2d"], dna["volume_fraction"], dna["sphericity"],
-                  dna["zdistr"]]
+                  dna["maxferet"], dna["minferet"], dna["meanferet"], dna["aspectratio2d"], dna["volume_fraction"],
+                  dna["sphericity"], dna["zdistr"]]
     DNApropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "2D Aspect ratio", "Volume fraction", "Sphericity", "z-distribution"]
+                    "Mean feret", "2D Aspect ratio", "Volume fraction", "Sphericity", "z-distribution"]
     # dnastackinvaginationvfrac
     allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
-                  gfp["maxferet"], gfp["minferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
+                  gfp["maxferet"], gfp["minferet"], gfp["meanferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
                   gfp["orientations"], gfp["zdistr"], gfp["raddist2d"], gfp["raddist2dmean"], gfp["raddist3d"],
                   gfp["meanvols"], gfp["wallDist2dms0"], gfp["wallDist2dSS0"], gfp["wallDist3dms0"],
                   gfp["wallDist3dSS0"], gfp["wallDist2dms1"], gfp["wallDist2dSS1"], gfp["wallDist3dms1"],
@@ -430,23 +446,24 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                   gfp["wallDist3dSS2"], gfp["wallDist2dms3"], gfp["wallDist2dSS3"], gfp["wallDist3dms3"],
                   gfp["wallDist3dSS3"], gfp["wallDist2dms4"], gfp["wallDist2dSS4"], gfp["wallDist3dms4"],
                   gfp["wallDist3dSS4"], gfp["wallDist2dms5"], gfp["wallDist2dSS5"], gfp["wallDist3dms5"],
-                  gfp["wallDist3dSS5"]]
+                  gfp["wallDist3dSS5"], gfp[f"meanzdist0"], gfp[f"stdzdist0"], gfp[f"meanzdist1"], gfp[f"stdzdist1"],
+                  gfp[f"meanzdist2"], gfp[f"stdzdist2"], gfp[f"meanzdist3"], gfp[f"stdzdist3"], gfp[f"meanzdist4"],
+                  gfp[f"stdzdist4"], gfp[f"meanzdist5"], gfp[f"stdzdist5"]]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation", "z-distribution",
-                    "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
-                    "Mean Volume", "Mean 2D distance to wall d0", "Stdev 2D distance to wall d0",
-                    "Mean 3D distance to wall d0",
-                    "Stdev 3D distance to wall d0", "Mean 2D distance to wall d1", "Stdev 2D distance to wall d1",
-                    "Mean 3D distance to wall d1",
+                    "Mean feret", "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation",
+                    "z-distribution", "radial distribution 2D", "normalized radial distribution 2D",
+                    "radial distribution 3D", "Mean Volume", "Mean 2D distance to wall d0",
+                    "Stdev 2D distance to wall d0", "Mean 3D distance to wall d0", "Stdev 3D distance to wall d0",
+                    "Mean 2D distance to wall d1", "Stdev 2D distance to wall d1", "Mean 3D distance to wall d1",
                     "Stdev 3D distance to wall d1", "Mean 2D distance to wall d2", "Stdev 2D distance to wall d2",
-                    "Mean 3D distance to wall d2",
-                    "Stdev 3D distance to wall d2", "Mean 2D distance to wall d3", "Stdev 2D distance to wall d3",
-                    "Mean 3D distance to wall d3",
-                    "Stdev 3D distance to wall d3", "Mean 2D distance to wall d4", "Stdev 2D distance to wall d4",
-                    "Mean 3D distance to wall d4",
+                    "Mean 3D distance to wall d2", "Stdev 3D distance to wall d2", "Mean 2D distance to wall d3",
+                    "Stdev 2D distance to wall d3", "Mean 3D distance to wall d3", "Stdev 3D distance to wall d3",
+                    "Mean 2D distance to wall d4", "Stdev 2D distance to wall d4", "Mean 3D distance to wall d4",
                     "Stdev 3D distance to wall d4", "Mean 2D distance to wall d5", "Stdev 2D distance to wall d5",
-                    "Mean 3D distance to wall d5",
-                    "Stdev 3D distance to wall d5"]
+                    "Mean 3D distance to wall d5", "Stdev 3D distance to wall d5", "Mean z-distance d0",
+                    "Stdev z-distance d0", "Mean z-distance d1", "Stdev z-distance d1", "Mean z-distance d2",
+                    "Stdev z-distance d2", "Mean z-distance d3", "Stdev z-distance d3", "Mean z-distance d4",
+                    "Stdev z-distance d4", "Mean z-distance d5", "Stdev z-distance d5"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True
