@@ -148,6 +148,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
         gfp[f"std_bot_zdist{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"mean_top_zdist{pl}"] = np.nan * np.ones(cell["shape"])
         gfp[f"std_top_zdist{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"mean_bot_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"std_bot_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"mean_top_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"std_top_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -344,7 +348,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                 # Dilate bounding boxes for  cell to match organelle
                                 cell_bbox = ShapeMetrics.dilate_bbox_uniform(CellObject, m=pad_length)
                                 # Dilate boundary only for Cell - unnecessary with new method
-                                dilated_cell_bbox = ShapeMetrics.dilate_boundary(cell_bbox, m=pad_length)
+                                dilated_cell_bbox = ShapeMetrics.dilate_boundary_zxy(cell_bbox, dilatexyonly=True,
+                                                                                     m=pad_length)
                                 mask_gfp_bbox = gfp_bbox & dilated_cell_bbox
                                 # cellstack.OmeTiffWriter.save(data=mask_gfp_bbox*1, uri=f"{savepath}/debug/mask_gfp_{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
                                 # cellstack.OmeTiffWriter.save(data=dilated_cell_bbox*1, uri=f"{savepath}/debug/dilatedcell_{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
@@ -356,19 +361,32 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             # cellstack.OmeTiffWriter.save(data=cell_bbox*1, uri=f"{savepath}/debug/cellbbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
                             # cellstack.OmeTiffWriter.save(data=gfp_bbox*1, uri=f"{savepath}/debug/gfp_bbox{basename}_{cell_index}_{t}_{w}_{r % 5}_{fovno}_{pad_length}.tiff", overwrite_file=True)
 
-                            z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std = ShapeMetrics.z_dist_from_bottom(
-                                org_bbox=mask_gfp_bbox,
-                                cell_bbox=cell_bbox)
+                            z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std = ShapeMetrics.z_dist_top_bottom_extrema(
+                                org_bbox=mask_gfp_bbox.copy(), cell_bbox=cell_bbox.copy())
 
                             gfp[f"mean_bot_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_mean
                             gfp[f"std_bot_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_std
                             gfp[f"mean_top_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_top_mean
                             gfp[f"std_top_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_top_std
 
-                            wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(org_bbox=mask_gfp_bbox,
-                                                                                                cell_bbox=cell_bbox)
-                            wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(org_bbox=mask_gfp_bbox,
-                                                                                                cell_bbox=cell_bbox)
+                            z_dists_bot_surface_mean, z_dists_bot_surface_std, z_dists_top_surface_mean, z_dists_top_surface_std = ShapeMetrics.z_dist_top_bottom_surface(
+                                org_bbox=mask_gfp_bbox.copy(), cell_bbox=cell_bbox.copy())
+
+                            gfp[f"mean_bot_surface_zdist{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_surface_mean
+                            gfp[f"std_bot_surface_zdist{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_surface_std
+                            gfp[f"mean_top_surface_zdist{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_top_surface_mean
+                            gfp[f"std_top_surface_zdist{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_top_surface_std
+
+                            wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(
+                                org_bbox=mask_gfp_bbox.copy(),
+                                cell_bbox=cell_bbox.copy())
+                            wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(
+                                org_bbox=mask_gfp_bbox.copy(),
+                                cell_bbox=cell_bbox.copy())
                             gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
                             gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
                             gfp[f"wallDist3dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_m
@@ -395,6 +413,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                         processes.append((t, w, r, fovno, cell_index, Cvolume, Cmeanferet,
                                           executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
                                                           GFPObjects, refcentroid)))
+                        # print(gfp[f"mean_bot_surface_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"std_bot_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"mean_top_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"std_top_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
                 print("Processes = ", len(processes))
 
             for it, iw, ir, ifovno, cell_id, cvol, cmferet, process in processes:
@@ -457,7 +479,19 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                   gfp[f"std_bot_zdist5"], gfp[f"mean_top_zdist0"], gfp[f"std_top_zdist0"], gfp[f"mean_top_zdist1"],
                   gfp[f"std_top_zdist1"], gfp[f"mean_top_zdist2"], gfp[f"std_top_zdist2"], gfp[f"mean_top_zdist3"],
                   gfp[f"std_top_zdist3"], gfp[f"mean_top_zdist4"], gfp[f"std_top_zdist4"], gfp[f"mean_top_zdist5"],
-                  gfp[f"std_top_zdist5"]]
+                  gfp[f"std_top_zdist5"], gfp[f"mean_bot_surface_zdist0"], gfp[f"std_bot_surface_zdist0"],
+                  gfp[f"mean_bot_surface_zdist1"],
+                  gfp[f"std_bot_surface_zdist1"], gfp[f"mean_bot_surface_zdist2"], gfp[f"std_bot_surface_zdist2"],
+                  gfp[f"mean_bot_surface_zdist3"],
+                  gfp[f"std_bot_surface_zdist3"], gfp[f"mean_bot_surface_zdist4"], gfp[f"std_bot_surface_zdist4"],
+                  gfp[f"mean_bot_surface_zdist5"],
+                  gfp[f"std_bot_surface_zdist5"], gfp[f"mean_top_surface_zdist0"], gfp[f"std_top_surface_zdist0"],
+                  gfp[f"mean_top_surface_zdist1"],
+                  gfp[f"std_top_surface_zdist1"], gfp[f"mean_top_surface_zdist2"], gfp[f"std_top_surface_zdist2"],
+                  gfp[f"mean_top_surface_zdist3"],
+                  gfp[f"std_top_surface_zdist3"], gfp[f"mean_top_surface_zdist4"], gfp[f"std_top_surface_zdist4"],
+                  gfp[f"mean_top_surface_zdist5"],
+                  gfp[f"std_top_surface_zdist5"]]
     GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "Mean feret", "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation",
                     "z-distribution", "radial distribution 2D", "normalized radial distribution 2D",
@@ -477,7 +511,25 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     "Stdev Top z-distance d0", "Mean Top z-distance d1", "Stdev Top z-distance d1",
                     "Mean Top z-distance d2", "Stdev Top z-distance d2", "Mean Top z-distance d3",
                     "Stdev Top z-distance d3", "Mean Top z-distance d4", "Stdev Top z-distance d4",
-                    "Mean Top z-distance d5", "Stdev Top z-distance d5"]
+                    "Mean Top z-distance d5", "Stdev Top z-distance d5", "Mean Bottom surface z-distance d0",
+                    "Stdev Bottom surface z-distance d0", "Mean Bottom surface z-distance d1",
+                    "Stdev Bottom surface z-distance d1", "Mean Bottom surface z-distance d2",
+                    "Stdev Bottom surface z-distance d2",
+                    "Mean Bottom surface z-distance d3", "Stdev Bottom surface z-distance d3",
+                    "Mean Bottom surface z-distance d4",
+                    "Stdev Bottom surface z-distance d4", "Mean Bottom surface z-distance d5",
+                    "Stdev Bottom surface z-distance d5",
+                    "Mean Top surface z-distance d0", "Stdev Top surface z-distance d0",
+                    "Mean Top surface z-distance d1",
+                    "Stdev Top surface z-distance d1", "Mean Top surface z-distance d2",
+                    "Stdev Top surface z-distance d2",
+                    "Mean Top surface z-distance d3", "Stdev Top surface z-distance d3",
+                    "Mean Top surface z-distance d4",
+                    "Stdev Top surface z-distance d4", "Mean Top surface z-distance d5",
+                    "Stdev Top surface z-distance d5"]
+    print(f"{len(cellpropnames)}:{len(allCellvals)}")
+    print(f"{len(DNApropnames)}:{len(allDNAvals)}")
+    print(f"{len(GFPpropnames)}:{len(allGFPvals)}")
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
     # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
     withstrpplt = True

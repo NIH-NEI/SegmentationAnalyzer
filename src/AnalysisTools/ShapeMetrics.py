@@ -5,6 +5,7 @@ import pandas as pd
 from imea import measure_2d
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from scipy.ndimage import distance_transform_edt, binary_dilation
+from skimage.morphology import octahedron
 from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
 from aicsimageio.writers import OmeTiffWriter
@@ -145,7 +146,7 @@ def dilate_bbox_uniform(ip_bbox, m=0):
     return op_bbox
 
 
-def dilate_boundary(bbox, m=0):
+def dilate_boundary_zxy(bbox, m=0, dilatexyonly=True):
     """
     performs 'binary' dilation on integer matrix.
 
@@ -156,11 +157,20 @@ def dilate_boundary(bbox, m=0):
     assert isinstance(m, int), "number of dilations must be an integer"
     # print("before", bbox.shape, np.unique(bbox), np.count_nonzero(bbox), m)
     assert len(np.unique(bbox)) <= 2, f"Input bounding box must contain upto 2 values, currently{len(np.unique(bbox))}"
+    assert bbox.ndim == 3, ""
+
+    structuring_element = np.zeros((3, 3, 3), dtype=int)
+    if dilatexyonly:
+        structuring_element[1, 1, :] = 1
+        structuring_element[1, :, 1] = 1
+    else:
+        structuring_element = octahedron(1)
     val = max(np.unique(bbox))
-    bbox = binary_dilation(bbox > 0, iterations=m) * val
+    nbbox = binary_dilation(bbox > 0, structure=structuring_element, iterations=m) * val
     # print("after", bbox.shape, np.unique(bbox), np.count_nonzero(bbox))
+    # print(f"")
     # dilate object
-    return bbox
+    return nbbox
 
 
 def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
@@ -205,7 +215,7 @@ def phantom_pad(bbox, slicediff):
     return op_bbox
 
 
-def z_dist_from_bottom(org_bbox, cell_bbox):
+def z_dist_top_bottom_extrema(org_bbox, cell_bbox):
     """
     Takes the minimum coordinate in cell and subtracts from all organelle values - this provides the distance
     from bottom of the cell. Returns a mean and standard deviation.
@@ -219,13 +229,78 @@ def z_dist_from_bottom(org_bbox, cell_bbox):
     highest_z_coord = cell_voxels[:, 0].max()
 
     organelle_voxels = np.transpose(np.nonzero(org_bbox))
-    z_distances_bot = np.abs(organelle_voxels[:, 0] - lowest_z_coord)
-    z_distances_top = np.abs(highest_z_coord - organelle_voxels[:, 0])
+    # 0.5 voxel correction term to account for voxel width from center
+    z_distances_bot = np.abs(organelle_voxels[:, 0] - lowest_z_coord) + 0.5
+    z_distances_top = np.abs(highest_z_coord - organelle_voxels[:, 0]) + 0.5
     z_dists_bot_mean = z_distances_bot.mean() * ZSCALE
     z_dists_bot_std = z_distances_bot.std() * ZSCALE
     z_dists_top_mean = z_distances_top.mean() * ZSCALE
     z_dists_top_std = z_distances_top.std() * ZSCALE
     return z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std
+
+
+def z_dist_top_bottom_surface(org_bbox, cell_bbox):
+    """
+    Takes the minimum coordinate in cell and subtracts from all organelle values - this provides the distance
+    from bottom of the cell. Returns a mean and standard deviation.
+
+    :param org_bbox:
+    :param cell_bbox:
+    :return:
+    """
+    cellshape = cell_bbox.shape
+
+    z_bot_coord_at_xy = np.full((cellshape[1], cellshape[2]), np.inf)
+    z_top_coord_at_xy = np.full((cellshape[1], cellshape[2]), np.inf)
+    for x in range(cellshape[1]):
+        for y in range(cellshape[2]):
+            z_indices = np.nonzero(cell_bbox[:, x, y])[0]
+            if z_indices.size > 0:
+                z_bot_coord_at_xy[x, y] = z_indices.min()
+                z_top_coord_at_xy[x, y] = z_indices.max()
+    organelle_voxels = np.transpose(np.nonzero(org_bbox))
+    z_distances_bot = []
+    z_distances_top = []
+    # print(organelle_voxels.shape)
+    # 0.5 added for correction
+    for z, x, y in organelle_voxels:
+        min_z = z_bot_coord_at_xy[x, y]
+        max_z = z_top_coord_at_xy[x, y]
+        if (min_z != np.inf) and (max_z != np.inf):
+            z_distances_bot.append(z - min_z + 0.5)
+            z_distances_top.append(max_z - z + 0.5)
+            # print(f"z:{z}, x:{x}, y:{y}, minz:{min_z}, maxz:{max_z}\t")
+    z_distances_bot = np.asarray(z_distances_bot) * ZSCALE
+    z_distances_top = np.asarray(z_distances_top) * ZSCALE
+    # print(f"zbot: {z_distances_bot}, ztop: {z_distances_top}")
+    z_dists_bot_surface_mean = z_distances_bot.mean()
+    z_dists_bot_surface_std = z_distances_bot.std()
+    z_dists_top_surface_mean = z_distances_top.mean()
+    z_dists_top_surface_std = z_distances_top.std()
+    # print( f"zbotms: {z_dists_bot_surface_mean}, {z_dists_bot_surface_std}, "
+    #        f"ztopms: {z_dists_top_surface_mean}, {z_dists_top_surface_std}")
+    # if np.isnan(z_dists_top_surface_std):
+    #     z_dists_top_surface_std = np.nan
+    # if np.isnan(z_dists_bot_surface_std):
+    #     z_dists_bot_surface_std = np.nan
+    # if np.isnan(z_dists_bot_surface_mean):
+    #     z_dists_bot_surface_mean = np.nan
+    # if np.isnan(z_dists_top_surface_mean):
+    #     z_dists_top_surface_mean = np.nan
+    # print(f"nzbotms: {z_dists_bot_surface_mean}, {z_dists_bot_surface_std}, "
+    #       f"nztopms: {z_dists_top_surface_mean}, {z_dists_top_surface_std}")
+
+    # try:
+    #     print(f"{z_distances_bot.nanmin()},{z_distances_bot.nanmax()},{z_distances_top.nanmin()},{z_distances_top.nanmax()}")
+    #     print(f"{z_dists_bot_surface_mean},{z_dists_bot_surface_std},{z_dists_top_surface_mean},{z_dists_top_surface_std}")
+    # except Exception as e:
+    #     pass
+    # print(f"{z_distances_top.min()}, {z_distances_bot.min()}")
+    # print(f"{z_distances_top.max()}, {z_distances_bot.max()}")
+    # print(f"Zcoords shapes:  {z_distances_top.shape},{z_distances_bot.shape}")
+    # exit()
+
+    return z_dists_bot_surface_mean, z_dists_bot_surface_std, z_dists_top_surface_mean, z_dists_top_surface_std
 
 
 def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale=True, scales=None, temppath=""):
@@ -279,7 +354,7 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
             # print(f"skipping z = {z}, uniques: {np.unique(cell2d)}, {np.unique(org2d)}")
         else:
             ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
-        # Combine edt and inverse edt
+        # Combine edt and inverse edt. An entire voxel is labelled 0
         ed_map = ed_map_in - ed_map_out
         # print("MIN edmapin: ", np.min(ed_map_in), "edmap: ", np.min(ed_map), "edmapout: ", np.min(ed_map_out), end="\t")
         # print("MAX edmapin: ", np.max(ed_map_in), "edmap: ", np.max(ed_map), "edmapout: ", np.max(ed_map_out), end="\t")
