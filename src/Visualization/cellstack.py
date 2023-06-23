@@ -1,7 +1,13 @@
+import sys
+
+sys.path.extend('../../../SegmentationAnalyzer')
+
+import click
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
 from skimage.morphology import binary_dilation
 from skimage.morphology import octahedron
+from src.AnalysisTools.dtypes import PathLike
 
 
 def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=False, debug=False):
@@ -73,25 +79,46 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", d
     return success
 
 
-if __name__ == "__main__":
+@click.command(options_metavar="<options>")
+@click.option("--segmentpath", default="C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/",
+              help="Path to folder containing segmentations. Folder must contain GFP segmentations. <segmentpath>/Cell "
+                   "folder must contain corresponding Actin and DNA segmentations ", metavar="<PathLike>")
+@click.option("--savepathdir", default="C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/",
+              metavar="<PathLike>", help="Path to folder where imaris visualization-ready stacks should be saved")
+@click.option("--ndilations", default=1, metavar="<int>", help="Number of cell dilations to be used for GFP channel")
+@click.option("--treatments", "ts", default=[0, 1], metavar="List<int>", multiple=True,
+              help="Treatment types. Must be 0 and/or 1")
+@click.option("--replicates", "rs", default=[0, 5], metavar="List<int>", multiple=True,
+              help="replicates. Must be 0 and/or 1")
+@click.option("--fovs", "fovnos", default=[5], metavar="List<int>", multiple=True,
+              help="Fields of View types. Must be number combinatiosn from [0,...,5]")
+# @click.option("--help", help="Show details for function ")
+def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int, ts: list = [0, 1], rs: list = [0, 5],
+                   fovnos: list = [5]):
+    """
+
+    :param segmentpath:
+    :param savepathdir:
+    :param ndilations:
+    :param ts:
+    :param rs:
+    :param fovnos:
+    :return:
+    """
 
     import os
-
     print(os.getcwd())
     # [cell, dna, gfp] = [np.random.random((20, 500, 500)) >= 0.4 for _ in range(3)]
     # mergestack(cell, dna, gfp, savename="test")
 
     from src.AnalysisTools import datautils, experimentalparams as ep
-    from src.stackio import stackio
+    # from src.stackio import stackio
     from os.path import join
     import os
 
-    DILATIONS = 1
-    segmentpath = "C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/"
-    savepathdir = "C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/"
     chlist = os.listdir(segmentpath)
 
-    print(chlist)
+    print(f"Channel List (must contain all channels):\t{chlist}")
 
     # exit()
     for ch in chlist:
@@ -111,20 +138,19 @@ if __name__ == "__main__":
         dnafiles, actinfiles, GFPfiles, no_stacks = datautils.orderfilesbybasenames(dnafnames, actinfnames, GFPfnames,
                                                                                     debug=False)
         # standard stacks
-        ts = [0, 1]
-        rs = [0, 5]
-        # rs = [1, 6]
-        fovnos = [5]
         for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = ep.find_treatment(r)
             if t in ts and r in rs and fovno in fovnos:
-                print(
-                    f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
-
+                print(f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t"
+                      f"|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
                 Cellstackpath = join(segmented_ch_folder_Cell, actinfile)
                 DNAstackpath = join(segmented_ch_folder_Cell, dnafile)
                 GFPstackpath = join(segmented_ch_folder_GFP, GFPfile)
                 savepath = join(savename, basename)
-                merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath, dilation=DILATIONS,
+                merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath, dilation=ndilations,
                                    dilatexyonly=True)
+
+
+if __name__ == "__main__":
+    mergeallstacks()
