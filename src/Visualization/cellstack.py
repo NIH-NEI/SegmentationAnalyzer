@@ -128,9 +128,6 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
         actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
         GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
         # savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
-        foldername = f'{savepathdir}{ch}/p'
-        if not os.path.exists(foldername):
-            os.mkdir(foldername)
         savename = f'{savepathdir}{ch}/imgs/'
         if not os.path.exists(savename):
             os.mkdir(savename)
