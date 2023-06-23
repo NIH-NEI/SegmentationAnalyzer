@@ -130,7 +130,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
         # savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
         foldername = f'{savepathdir}{ch}/p'
         if not os.path.exists(foldername):
-            os.mkdir(savename)
+            os.mkdir(foldername)
         savename = f'{savepathdir}{ch}/imgs/'
         if not os.path.exists(savename):
             os.mkdir(savename)
