@@ -1,6 +1,7 @@
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
 from skimage.morphology import binary_dilation
+from skimage.morphology import octahedron
 
 
 def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=False, debug=False):
@@ -43,7 +44,7 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_c
     return success
 
 
-def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
+def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", dilation=0, dilatexyonly=True):
     from src.stackio import stackio
     success = False
     try:
@@ -51,8 +52,16 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=""):
         img_ACTIN = stackio.opensegmentedstack(Cellstackpath)  # binary=False
         img_DNA = stackio.opensegmentedstack(DNAstackpath)  # binary=False
         # CZXY
-        img_DNA = img_DNA & img_ACTIN
-        img_GFP = img_GFP & img_ACTIN
+        structuring_element = np.zeros((3, 3, 3), dtype=int)
+        if dilatexyonly:
+            structuring_element[1, 1, :] = 1
+            structuring_element[1, :, 1] = 1
+        else:
+            structuring_element = octahedron(1)
+        val = max(np.unique(img_ACTIN))
+        dilated_img_ACTIN = binary_dilation(img_ACTIN > 0, structure=structuring_element, iterations=dilation) * val
+        img_DNA = img_DNA & dilated_img_ACTIN
+        img_GFP = img_GFP & dilated_img_ACTIN
         mergedchannel = np.stack([img_ACTIN, img_DNA, img_GFP], axis=0)
         # TCZXY
         mergedchannel = np.expand_dims(mergedchannel, axis=0)
@@ -77,6 +86,7 @@ if __name__ == "__main__":
     from os.path import join
     import os
 
+    DILATIONS = 1
     segmentpath = "C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/"
     savepathdir = "C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/"
     chlist = os.listdir(segmentpath)
@@ -116,4 +126,5 @@ if __name__ == "__main__":
                 DNAstackpath = join(segmented_ch_folder_Cell, dnafile)
                 GFPstackpath = join(segmented_ch_folder_GFP, GFPfile)
                 savepath = join(savename, basename)
-                merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath)
+                merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename=savepath, dilation=DILATIONS,
+                                   dilatexyonly=True)

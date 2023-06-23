@@ -179,7 +179,7 @@ def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
 
     :param ip_slice_obj:
     :param pad_length:
-    :param stackshape:
+    :param stackshape: 
     :return:
     """
     modified_slice_obj = []
@@ -556,7 +556,7 @@ def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
     # except Exception as e:
     #     print(e, traceback.format_exc())
     return organellecounts, centroids, volumes, xspans, yspans, zspans, maxferets, meanferets, minferets, mipareas, \
-           orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
+        orientations_3d, z_distributions, radial_distribution2ds, radial_distribution3ds, meanvolume
 
 
 if __name__ == "__main__":
