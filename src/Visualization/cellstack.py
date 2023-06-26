@@ -5,7 +5,7 @@ sys.path.extend('../../../SegmentationAnalyzer')
 import click
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
-from skimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 from skimage.morphology import octahedron
 from src.AnalysisTools.dtypes import PathLike
 
@@ -13,10 +13,10 @@ from src.AnalysisTools.dtypes import PathLike
 def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=False, debug=False):
     """
 
-    :param CellObject: 3 dimensional stack of
-    :param DNAObjects:
-    :param GFPObjects:
-    :param savename:
+    :param CellObject: 3-dimensional cell segmentation stack
+    :param DNAObjects: 3-dimensional DNA segmentation stack
+    :param GFPObjects: 3-dimensional gfp channel segmentation stack
+    :param savename: Name of savefile
     :param save: whether to save the file
     :return: True if operation succeeded
     """
@@ -51,6 +51,16 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_c
 
 
 def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", dilation=0, dilatexyonly=True):
+    """
+
+    :param Cellstackpath: Path to 3-dimensional cell segmentation stack
+    :param DNAstackpath:  Path to 3-dimensional DNA segmentation stack
+    :param GFPstackpath:  Path to 3-dimensional GFP segmentation stack
+    :param savename: name of save file
+    :param dilation: number of dilations (applied to cell only to obtain GFP and DNA at borders)
+    :param dilatexyonly: only dilate along xy plane. If set to False, will dilate along x,y and z directions.
+    :return:
+    """
     from src.stackio import stackio
     success = False
     try:
@@ -97,12 +107,13 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
                    fovnos: list = [5]):
     """
 
-    :param segmentpath:
-    :param savepathdir:
-    :param ndilations:
-    :param ts:
-    :param rs:
-    :param fovnos:
+    :param segmentpath: Path to Directory containing folders for each channel. Each channel subdirectory must contain
+    data organized such that "Cell" subfolder contains DNA and ACTIN (actin-based Cell borders) segmentation and
+    :param savepathdir: Folder to save merged stacks in
+    :param ndilations: number of cell dilations. Dilations are applied to cells only for the purpose of obtaining GFP and DNA within dilated boundaries.
+    :param ts: treatments to be used from [0,1]
+    :param rs: replicates(wells) used from [0,1,2,3,4]
+    :param fovnos: fields of view from[0,1,2,3,4,5]
     :return:
     """
 
@@ -118,7 +129,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
 
     chlist = os.listdir(segmentpath)
 
-    print(f"Channel List (must contain all channels):\t{chlist}")
+    print(f"Channel List (Channels found in folder):\t{chlist}")
 
     # exit()
     for ch in chlist:
@@ -138,6 +149,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
         for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = ep.find_treatment(r)
+            r = r % 5 # to account for when user doesn't precalculate it.
             if t in ts and r in rs and fovno in fovnos:
                 print(f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t"
                       f"|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
