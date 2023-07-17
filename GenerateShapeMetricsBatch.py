@@ -87,71 +87,83 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     cell = {}
     cell["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells)
     cell["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, 3)
-    cell["Volumes"] = np.nan * np.ones(cell["shape"])
-    cell["Centroids"] = np.nan * np.ones(cell["shape3d"])
-    cell["xspan"] = np.nan * np.ones(cell["shape"])
-    cell["yspan"] = np.nan * np.ones(cell["shape"])
-    cell["zspan"] = np.nan * np.ones(cell["shape"])
-    cell["miparea"] = np.nan * np.ones(cell["shape"])
-    cell["aspectratio2d"] = np.nan * np.ones(cell["shape"])
-    cell["minferet"] = np.nan * np.ones(cell["shape"])
-    cell["meanferet"] = np.nan * np.ones(cell["shape"])
-    cell["maxferet"] = np.nan * np.ones(cell["shape"])
-    cell["sphericity"] = np.nan * np.ones(cell["shape"])
 
     dna = {}
     dna["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell)
     dna["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell, 3)
-    dna["Volumes"] = np.nan * np.ones(dna["shape"])
-    dna["Centroids"] = np.nan * np.ones(dna["shape3d"])
-    dna["xspan"] = np.nan * np.ones(dna["shape"])
-    dna["yspan"] = np.nan * np.ones(dna["shape"])
-    dna["zspan"] = np.nan * np.ones(dna["shape"])
-    dna["miparea"] = np.nan * np.ones(dna["shape"])
-    dna["minferet"] = np.nan * np.ones(dna["shape"])
-    dna["meanferet"] = np.nan * np.ones(dna["shape"])
-    dna["maxferet"] = np.nan * np.ones(dna["shape"])
-    dna["sphericity"] = np.nan * np.ones(dna["shape"])
-    dna["aspectratio2d"] = np.nan * np.ones(dna["shape"])
-    dna["volume_fraction"] = np.nan * np.ones(dna["shape"])
-    dna["zdistr"] = np.nan * np.ones(dna["shape"])
-    # dnastackinvaginationvfrac = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
 
     gfp = {}
     gfp["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell)
     gfp["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxgfp_cell, 3)
-    gfp["Volumes"] = np.nan * np.ones(gfp["shape"])
-    gfp["meanvols"] = np.nan * np.ones(gfp["shape"])
-    gfp["Centroids"] = np.nan * np.ones(gfp["shape3d"])
-    gfp["xspan"] = np.nan * np.ones(gfp["shape"])
-    gfp["yspan"] = np.nan * np.ones(gfp["shape"])
-    gfp["zspan"] = np.nan * np.ones(gfp["shape"])
-    gfp["miparea"] = np.nan * np.ones(gfp["shape"])
-    gfp["minferet"] = np.nan * np.ones(gfp["shape"])
-    gfp["meanferet"] = np.nan * np.ones(gfp["shape"])
-    gfp["maxferet"] = np.nan * np.ones(gfp["shape"])
-    gfp["aspectratio2d"] = np.nan * np.ones(gfp["shape"])
-    gfp["orientations"] = np.nan * np.ones(gfp["shape3d"])
-    gfp["cpc"] = np.nan * np.ones(cell["shape"])  # Note: Uses shape from cell
-    gfp["volfrac"] = np.nan * np.ones(gfp["shape"])
-    gfp["zdistr"] = np.nan * np.ones(gfp["shape"])
-    gfp["raddist2d"] = np.nan * np.ones(gfp["shape"])
-    gfp["raddist2dmean"] = np.nan * np.ones(gfp["shape"])
-    gfp["raddist3d"] = np.nan * np.ones(gfp["shape"])
+    cellkeys = ["Volume", "Centroid", "X span", "Y span", "Z span", "MIP area", "2D Aspect ratio", "Min feret",
+                "Mean feret", "Max feret", "Sphericity"]
+    dnakeys = ["Volume", "Centroid", "X span", "Y span", "Z span", "MIP area", "2D Aspect ratio", "Min feret",
+               "Mean feret", "Max feret", "Sphericity", "Volume fraction", "z-distribution"]
+    gfpkeys = ["Volume", "Mean Volume", "Centroid", "X span", "Y span", "Z span", "MIP area", "2D Aspect ratio",
+               "Min feret", "Mean feret", "Max feret", "Sphericity", "Volume fraction", "z-distribution", "Orientation",
+               "Count per cell", "radial distribution 2D", "radial distribution 3D", "radial distribution 2Dmean"]
+    # dnastackinvaginationvfrac = np.nan * np.ones((usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, maxdnapercell))
+
     max_pad_length = 6  # use value 1 more than final dilation
     for pl in range(max_pad_length):
-        gfp[f"wallDist2dms{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"wallDist3dms{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"wallDist3dSS{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"wallDist2dSS{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"mean_bot_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"std_bot_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"mean_top_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"std_top_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"mean_bot_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"std_bot_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"mean_top_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
-        gfp[f"std_top_surface_zdist{pl}"] = np.nan * np.ones(cell["shape"])
+        # TODO: Wait for Davide 
+        cell["Volume"] = np.nan * np.ones(cell["shape"])
+        cell["Centroid"] = np.nan * np.ones(cell["shape3d"])
+        cell["X span"] = np.nan * np.ones(cell["shape"])
+        cell["Y span"] = np.nan * np.ones(cell["shape"])
+        cell["Z span"] = np.nan * np.ones(cell["shape"])
+        cell["MIP area"] = np.nan * np.ones(cell["shape"])
+        cell["2D Aspect ratio"] = np.nan * np.ones(cell["shape"])
+        cell["Min feret"] = np.nan * np.ones(cell["shape"])
+        cell["Mean feret"] = np.nan * np.ones(cell["shape"])
+        cell["Max feret"] = np.nan * np.ones(cell["shape"])
+        cell["Sphericity"] = np.nan * np.ones(cell["shape"])
+
+        dna["Volume"] = np.nan * np.ones(dna["shape"])
+        dna["Centroid"] = np.nan * np.ones(dna["shape3d"])
+        dna["X span"] = np.nan * np.ones(dna["shape"])
+        dna["Y span"] = np.nan * np.ones(dna["shape"])
+        dna["Z span"] = np.nan * np.ones(dna["shape"])
+        dna["MIP area"] = np.nan * np.ones(dna["shape"])
+        dna["Min feret"] = np.nan * np.ones(dna["shape"])
+        dna["Mean feret"] = np.nan * np.ones(dna["shape"])
+        dna["Max feret"] = np.nan * np.ones(dna["shape"])
+        dna["Sphericity"] = np.nan * np.ones(dna["shape"])
+        dna["2D Aspect ratio"] = np.nan * np.ones(dna["shape"])
+        dna["Volume fraction"] = np.nan * np.ones(dna["shape"])
+        dna["z-distribution"] = np.nan * np.ones(dna["shape"])
+
+        gfp["Volume"] = np.nan * np.ones(gfp["shape"])
+        gfp["Mean Volume"] = np.nan * np.ones(gfp["shape"])
+        gfp["Centroid"] = np.nan * np.ones(gfp["shape3d"])
+        gfp["X span"] = np.nan * np.ones(gfp["shape"])
+        gfp["Y span"] = np.nan * np.ones(gfp["shape"])
+        gfp["Z span"] = np.nan * np.ones(gfp["shape"])
+        gfp["MIP area"] = np.nan * np.ones(gfp["shape"])
+        gfp["Min feret"] = np.nan * np.ones(gfp["shape"])
+        gfp["Mean feret"] = np.nan * np.ones(gfp["shape"])
+        gfp["Max feret"] = np.nan * np.ones(gfp["shape"])
+        gfp["2D Aspect ratio"] = np.nan * np.ones(gfp["shape"])
+        gfp["Orientation"] = np.nan * np.ones(gfp["shape3d"])
+        gfp["Count per cell"] = np.nan * np.ones(cell["shape"])  # Note: Uses shape from cell
+        gfp["Volume fraction"] = np.nan * np.ones(gfp["shape"])
+        gfp["z-distribution"] = np.nan * np.ones(gfp["shape"])
+        gfp["radial distribution 2D"] = np.nan * np.ones(gfp["shape"])
+        gfp["radial distribution 2Dmean"] = np.nan * np.ones(gfp["shape"])
+        gfp["radial distribution 3D"] = np.nan * np.ones(gfp["shape"])
+
+        gfp[f"Mean 2D distance to wall d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Mean3D distance to wall d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev 3D distance to wall d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev 2D distance to wall d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Mean Bottom z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev Bottom z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Mean Top z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev Top z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Mean Bottom surface z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev Bottom surface z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Mean Top surface z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
+        gfp[f"Stdev Top surface z-distance d{pl}"] = np.nan * np.ones(cell["shape"])
 
     executor = ProcessPoolExecutor(max_workers=num_processes)
     processes = []
@@ -209,7 +221,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     labelactin_currentdna = labelactin[selected_dna]
                     # get all connected actin IDs
                     connected_actins = list(np.unique(labelactin_currentdna))
-                    if 0 in connected_actins:  # not necessary since is_ doesnt have 0. Just an additional precaution
+                    if 0 in connected_actins:  # not necessary since is_ doesn't have 0. Just an additional precaution
                         connected_actins.remove(0)
                     # calculate total overlap area for all actins with current DNA
                     combined_actins_volume_overlap = np.count_nonzero(labelactin_currentdna)
@@ -265,17 +277,17 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                         if no_members >= 0:  # include cells with no nuclei
                             # if False:  # decide condition
                             # savethisimage = True
-                            cell["Volumes"][t, w, 0, r % 5, fovno, cell_index] = Cvolume
-                            cell["xspan"][t, w, 0, r % 5, fovno, cell_index] = Cxspan
-                            cell["yspan"][t, w, 0, r % 5, fovno, cell_index] = Cyspan
-                            cell["zspan"][t, w, 0, r % 5, fovno, cell_index] = Czspan
-                            cell["miparea"][t, w, 0, r % 5, fovno, cell_index] = Cmiparea
-                            cell["sphericity"][t, w, 0, r % 5, fovno, cell_index] = Csphericity
-                            cell["minferet"][t, w, 0, r % 5, fovno, cell_index] = Cminferet
-                            cell["meanferet"][t, w, 0, r % 5, fovno, cell_index] = Cmeanferet
-                            cell["maxferet"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet
-                            cell["Centroids"][t, w, 0, r % 5, fovno, cell_index] = Ccentroid
-                            cell["aspectratio2d"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet / Cminferet
+                            cell["Volume"][t, w, 0, r % 5, fovno, cell_index] = Cvolume
+                            cell["X span"][t, w, 0, r % 5, fovno, cell_index] = Cxspan
+                            cell["Y span"][t, w, 0, r % 5, fovno, cell_index] = Cyspan
+                            cell["Z span"][t, w, 0, r % 5, fovno, cell_index] = Czspan
+                            cell["MIP area"][t, w, 0, r % 5, fovno, cell_index] = Cmiparea
+                            cell["Sphericity"][t, w, 0, r % 5, fovno, cell_index] = Csphericity
+                            cell["Min feret"][t, w, 0, r % 5, fovno, cell_index] = Cminferet
+                            cell["Mean feret"][t, w, 0, r % 5, fovno, cell_index] = Cmeanferet
+                            cell["Max feret"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet
+                            cell["Centroid"][t, w, 0, r % 5, fovno, cell_index] = Ccentroid
+                            cell["2D Aspect ratio"][t, w, 0, r % 5, fovno, cell_index] = Cmaxferet / Cminferet
                             # meta.createcelldict()
                             extramembersnotify = True
                             for memberdna_no in range(no_members):
@@ -294,8 +306,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                     if extramembersnotify:
                                         print(f"found more than 2 dna: {no_members}")
                                         extramembersnotify = False
-                                    dnavol1 = dna["Volumes"][t, w, 0, r % 5, fovno, cell_index, 0]
-                                    dnavol2 = dna["Volumes"][t, w, 0, r % 5, fovno, cell_index, 1]
+                                    dnavol1 = dna["Volume"][t, w, 0, r % 5, fovno, cell_index, 0]
+                                    dnavol2 = dna["Volume"][t, w, 0, r % 5, fovno, cell_index, 1]
 
                                     if Dvolume == dnavol1 or Dvolume == dnavol2:
                                         print(f"Current volume is the same size as one of the volumes. Skipping")
@@ -315,26 +327,34 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                     dna_index = memberdna_no
                                 dna_c_rel = Dcentroid - Ccentroid
 
-                                dna["Centroids"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dcentroid
-                                dna["Volumes"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dvolume
-                                dna["xspan"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dxspan
-                                dna["yspan"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dyspan
-                                dna["zspan"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dzspan
-                                dna["miparea"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmiparea
-                                dna["sphericity"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dsphericity
-                                dna["minferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dminferet
-                                dna["meanferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmeanferet
-                                dna["maxferet"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet
-                                dna["aspectratio2d"][
+                                dna["Centroid"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dcentroid
+                                dna["Volume"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dvolume
+                                dna["X span"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dxspan
+                                dna["Y span"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dyspan
+                                dna["Z span"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dzspan
+                                dna["MIP area"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmiparea
+                                dna["Sphericity"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dsphericity
+                                dna["Min feret"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dminferet
+                                dna["Mean feret"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmeanferet
+                                dna["Max feret"][t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet
+                                dna["2D Aspect ratio"][
                                     t, w, 0, r % 5, fovno, cell_index, dna_index] = Dmaxferet / Dminferet
-                                dna["volume_fraction"][
+                                dna["Volume fraction"][
                                     t, w, 0, r % 5, fovno, cell_index, dna_index] = Dvolume / Cvolume * 100
-                                dna["zdistr"][t, w, 0, r % 5, fovno, cell_index, dna_index] = dna_c_rel[0]
+                                dna["z-distribution"][t, w, 0, r % 5, fovno, cell_index, dna_index] = dna_c_rel[0]
                         # GFP members
                         GFPObjects = (img_GFP[slices] & CellObject)  # Uses default slices
 
                         # NOTE: This is currently necessary for calculation of distance to wall metrics
+                        usednareference = False  # TODO
+                        refcentroid = None
+
+                        if usednareference:
+                            refcentroid = Dcentroid
+                        else:
+                            refcentroid = Ccentroid
                         for pad_length in range(max_pad_length):
+                            # condition needed as dilations less than one are considered equivalent to infinity
                             d2w_slices, slicediffpad, shifted_slice_idx = ShapeMetrics.pad_3d_slice(slices,
                                                                                                     pad_length=pad_length,
                                                                                                     stackshape=stackshape)
@@ -364,21 +384,25 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std = ShapeMetrics.z_dist_top_bottom_extrema(
                                 org_bbox=mask_gfp_bbox.copy(), cell_bbox=cell_bbox.copy())
 
-                            gfp[f"mean_bot_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_mean
-                            gfp[f"std_bot_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_std
-                            gfp[f"mean_top_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_top_mean
-                            gfp[f"std_top_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = z_dists_top_std
+                            gfp[f"Mean Bottom z-distance d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_mean
+                            gfp[f"Stdev Bottom z-distance d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_std
+                            gfp[f"Mean Top z-distance d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_top_mean
+                            gfp[f"Stdev Top z-distance d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = z_dists_top_std
 
                             z_dists_bot_surface_mean, z_dists_bot_surface_std, z_dists_top_surface_mean, z_dists_top_surface_std = ShapeMetrics.z_dist_top_bottom_surface(
                                 org_bbox=mask_gfp_bbox.copy(), cell_bbox=cell_bbox.copy())
 
-                            gfp[f"mean_bot_surface_zdist{pad_length}"][
+                            gfp[f"Mean Bottom surface z-distance d{pad_length}"][
                                 t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_surface_mean
-                            gfp[f"std_bot_surface_zdist{pad_length}"][
+                            gfp[f"Stdev Bottom surface z-distance d{pad_length}"][
                                 t, w, 0, r % 5, fovno, cell_index] = z_dists_bot_surface_std
-                            gfp[f"mean_top_surface_zdist{pad_length}"][
+                            gfp[f"Mean Top surface z-distance d{pad_length}"][
                                 t, w, 0, r % 5, fovno, cell_index] = z_dists_top_surface_mean
-                            gfp[f"std_top_surface_zdist{pad_length}"][
+                            gfp[f"Stdev Top surface z-distance d{pad_length}"][
                                 t, w, 0, r % 5, fovno, cell_index] = z_dists_top_surface_std
 
                             wall_dist_2d_m, wall_dist_2d_s = ShapeMetrics.distance_from_wall_2d(
@@ -387,10 +411,14 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             wall_dist_3d_m, wall_dist_3d_s = ShapeMetrics.distance_from_wall_3d(
                                 org_bbox=mask_gfp_bbox.copy(),
                                 cell_bbox=cell_bbox.copy())
-                            gfp[f"wallDist2dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
-                            gfp[f"wallDist2dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
-                            gfp[f"wallDist3dms{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_m
-                            gfp[f"wallDist3dSS{pad_length}"][t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_s
+                            gfp[f"Mean 2D distance to wall d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_m
+                            gfp[f"Stdev 2D distance to wall d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = wall_dist_2d_s
+                            gfp[f"Mean3D distance to wall d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_m
+                            gfp[f"Stdev 3D distance to wall d{pad_length}"][
+                                t, w, 0, r % 5, fovno, cell_index] = wall_dist_3d_s
                         saveindividualcellstack = (np.random.random(1)[0] < 0.05)  # 5% sample ~~is_//10
 
                         if saveindividualcellstack:
@@ -401,22 +429,15 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             cellstack.mergestack(CellObject, DNAObjects, GFPObjects,
                                                  savename=join(cellstackfolder, stackfilename), save=True,
                                                  add_3d_cell_outline=False)
-                        # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
-                        usednareference = False  # TODO
-                        refcentroid = None
+                            # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
 
-                        if usednareference:
-                            refcentroid = Dcentroid
-                        else:
-                            refcentroid = Ccentroid
-
-                        processes.append((t, w, r, fovno, cell_index, Cvolume, Cmeanferet,
-                                          executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
-                                                          GFPObjects, refcentroid)))
-                        # print(gfp[f"mean_bot_surface_zdist{pad_length}"][t, w, 0, r % 5, fovno, cell_index], end="\t")
-                        # print(gfp[f"std_bot_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
-                        # print(gfp[f"mean_top_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
-                        # print(gfp[f"std_top_surface_zdist{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
+                            processes.append((t, w, r, fovno, cell_index, Cvolume, Cmeanferet,
+                                              executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
+                                                              GFPObjects, refcentroid)))
+                        # print(gfp[f"Mean Bottom surface z-distance d{pad_length}"][t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"Stdev Bottom surface z-distance d{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"Mean Top surface z-distance d{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
+                        # print(gfp[f"Stdev Top surface z-distance d{pad_length}"][ t, w, 0, r % 5, fovno, cell_index], end="\t")
                 print("Processes = ", len(processes))
 
             for it, iw, ir, ifovno, cell_id, cvol, cmferet, process in processes:
@@ -424,109 +445,91 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = features
                 # print("gcount:", Gcount)
                 # print("indorient", indorient3D.shape, indorient3D.T.shape)
-                gfp["cpc"][it, iw, 0, ir % 5, ifovno, cell_id] = Gcount
-                gfp["meanvols"][it, iw, 0, ir % 5, ifovno, cell_id] = Gmeanvol
-                gfp["Centroids"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gcentroid
-                gfp["Volumes"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gvolume
-                gfp["xspan"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gspan
-                gfp["yspan"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gyspan
-                gfp["zspan"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gzspan
-                gfp["miparea"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmiparea
-                gfp["minferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gminferet
-                gfp["meanferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmeanferet
-                gfp["maxferet"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet
-                gfp["aspectratio2d"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet / Gminferet
-                gfp["volfrac"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gvolume / cvol * 100
-                gfp["orientations"][it, iw, 0, ir % 5, fovno, cell_id, :] = Gorient3D
-                gfp["zdistr"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gz_dist
-                gfp["raddist2d"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist2d
-                gfp["raddist2dmean"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist2d / cmferet
-                gfp["raddist3d"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist3d
+                gfp["Count per cell"][it, iw, 0, ir % 5, ifovno, cell_id] = Gcount
+                gfp["Mean Volume"][it, iw, 0, ir % 5, ifovno, cell_id] = Gmeanvol
+                gfp["Centroid"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gcentroid
+                gfp["Volume"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gvolume
+                gfp["X span"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gspan
+                gfp["Y span"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gyspan
+                gfp["Z span"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gzspan
+                gfp["MIP area"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmiparea
+                gfp["Min feret"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gminferet
+                gfp["Mean feret"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmeanferet
+                gfp["Max feret"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet
+                gfp["2D Aspect ratio"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gmaxferet / Gminferet
+                gfp["Volume fraction"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gvolume / cvol * 100
+                gfp["Orientation"][it, iw, 0, ir % 5, fovno, cell_id, :] = Gorient3D
+                gfp["z-distribution"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gz_dist
+                gfp["radial distribution 2D"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist2d
+                gfp["radial distribution 2Dmean"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist2d / cmferet
+                gfp["radial distribution 3D"][it, iw, 0, ir % 5, ifovno, cell_id, :] = Gradial_dist3d
 
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
-            # print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfp["Volumes"]))}")
+            # print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfp["Volume"]))}")
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
     if not test:
         time.sleep(120)
 
-    allCellvals = [cell["Centroids"], cell["Volumes"], cell["xspan"], cell["yspan"], cell["zspan"], cell["miparea"],
-                   cell["maxferet"], cell["minferet"], cell["meanferet"], cell["aspectratio2d"], cell["sphericity"]]  ##
-    cellpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                     "Mean feret", "2D Aspect ratio", "Sphericity"]
+    allCellvals = [cell["Centroid"], cell["Volume"], cell["X span"], cell["Y span"], cell["Z span"], cell["MIP area"],
+                   cell["Max feret"], cell["Min feret"], cell["Mean feret"], cell["2D Aspect ratio"],
+                   cell["Sphericity"]]  ##
 
-    allDNAvals = [dna["Centroids"], dna["Volumes"], dna["xspan"], dna["yspan"], dna["zspan"], dna["miparea"],
-                  dna["maxferet"], dna["minferet"], dna["meanferet"], dna["aspectratio2d"], dna["volume_fraction"],
-                  dna["sphericity"], dna["zdistr"]]
-    DNApropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "Mean feret", "2D Aspect ratio", "Volume fraction", "Sphericity", "z-distribution"]
+    allDNAvals = [dna["Centroid"], dna["Volume"], dna["X span"], dna["Y span"], dna["Z span"], dna["MIP area"],
+                  dna["Max feret"], dna["Min feret"], dna["Mean feret"], dna["2D Aspect ratio"], dna["Volume fraction"],
+                  dna["Sphericity"], dna["z-distribution"]]
+
     # dnastackinvaginationvfrac
-    allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
-                  gfp["maxferet"], gfp["minferet"], gfp["meanferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
-                  gfp["orientations"], gfp["zdistr"], gfp["raddist2d"], gfp["raddist2dmean"], gfp["raddist3d"],
-                  gfp["meanvols"], gfp["wallDist2dms0"], gfp["wallDist2dSS0"], gfp["wallDist3dms0"],
-                  gfp["wallDist3dSS0"], gfp["wallDist2dms1"], gfp["wallDist2dSS1"], gfp["wallDist3dms1"],
-                  gfp["wallDist3dSS1"], gfp["wallDist2dms2"], gfp["wallDist2dSS2"], gfp["wallDist3dms2"],
-                  gfp["wallDist3dSS2"], gfp["wallDist2dms3"], gfp["wallDist2dSS3"], gfp["wallDist3dms3"],
-                  gfp["wallDist3dSS3"], gfp["wallDist2dms4"], gfp["wallDist2dSS4"], gfp["wallDist3dms4"],
-                  gfp["wallDist3dSS4"], gfp["wallDist2dms5"], gfp["wallDist2dSS5"], gfp["wallDist3dms5"],
-                  gfp["wallDist3dSS5"], gfp[f"mean_bot_zdist0"], gfp[f"std_bot_zdist0"], gfp[f"mean_bot_zdist1"],
-                  gfp[f"std_bot_zdist1"], gfp[f"mean_bot_zdist2"], gfp[f"std_bot_zdist2"], gfp[f"mean_bot_zdist3"],
-                  gfp[f"std_bot_zdist3"], gfp[f"mean_bot_zdist4"], gfp[f"std_bot_zdist4"], gfp[f"mean_bot_zdist5"],
-                  gfp[f"std_bot_zdist5"], gfp[f"mean_top_zdist0"], gfp[f"std_top_zdist0"], gfp[f"mean_top_zdist1"],
-                  gfp[f"std_top_zdist1"], gfp[f"mean_top_zdist2"], gfp[f"std_top_zdist2"], gfp[f"mean_top_zdist3"],
-                  gfp[f"std_top_zdist3"], gfp[f"mean_top_zdist4"], gfp[f"std_top_zdist4"], gfp[f"mean_top_zdist5"],
-                  gfp[f"std_top_zdist5"], gfp[f"mean_bot_surface_zdist0"], gfp[f"std_bot_surface_zdist0"],
-                  gfp[f"mean_bot_surface_zdist1"],
-                  gfp[f"std_bot_surface_zdist1"], gfp[f"mean_bot_surface_zdist2"], gfp[f"std_bot_surface_zdist2"],
-                  gfp[f"mean_bot_surface_zdist3"],
-                  gfp[f"std_bot_surface_zdist3"], gfp[f"mean_bot_surface_zdist4"], gfp[f"std_bot_surface_zdist4"],
-                  gfp[f"mean_bot_surface_zdist5"],
-                  gfp[f"std_bot_surface_zdist5"], gfp[f"mean_top_surface_zdist0"], gfp[f"std_top_surface_zdist0"],
-                  gfp[f"mean_top_surface_zdist1"],
-                  gfp[f"std_top_surface_zdist1"], gfp[f"mean_top_surface_zdist2"], gfp[f"std_top_surface_zdist2"],
-                  gfp[f"mean_top_surface_zdist3"],
-                  gfp[f"std_top_surface_zdist3"], gfp[f"mean_top_surface_zdist4"], gfp[f"std_top_surface_zdist4"],
-                  gfp[f"mean_top_surface_zdist5"],
-                  gfp[f"std_top_surface_zdist5"]]
-    GFPpropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
-                    "Mean feret", "2D Aspect ratio", "Volume fraction", "Count per cell", "Orientation",
-                    "z-distribution", "radial distribution 2D", "normalized radial distribution 2D",
-                    "radial distribution 3D", "Mean Volume", "Mean 2D distance to wall d0",
-                    "Stdev 2D distance to wall d0", "Mean 3D distance to wall d0", "Stdev 3D distance to wall d0",
-                    "Mean 2D distance to wall d1", "Stdev 2D distance to wall d1", "Mean 3D distance to wall d1",
-                    "Stdev 3D distance to wall d1", "Mean 2D distance to wall d2", "Stdev 2D distance to wall d2",
-                    "Mean 3D distance to wall d2", "Stdev 3D distance to wall d2", "Mean 2D distance to wall d3",
-                    "Stdev 2D distance to wall d3", "Mean 3D distance to wall d3", "Stdev 3D distance to wall d3",
-                    "Mean 2D distance to wall d4", "Stdev 2D distance to wall d4", "Mean 3D distance to wall d4",
-                    "Stdev 3D distance to wall d4", "Mean 2D distance to wall d5", "Stdev 2D distance to wall d5",
-                    "Mean 3D distance to wall d5", "Stdev 3D distance to wall d5", "Mean Bottom z-distance d0",
-                    "Stdev Bottom z-distance d0", "Mean Bottom z-distance d1", "Stdev Bottom z-distance d1",
-                    "Mean Bottom z-distance d2", "Stdev Bottom z-distance d2", "Mean Bottom z-distance d3",
-                    "Stdev Bottom z-distance d3", "Mean Bottom z-distance d4", "Stdev Bottom z-distance d4",
-                    "Mean Bottom z-distance d5", "Stdev Bottom z-distance d5", "Mean Top z-distance d0",
-                    "Stdev Top z-distance d0", "Mean Top z-distance d1", "Stdev Top z-distance d1",
-                    "Mean Top z-distance d2", "Stdev Top z-distance d2", "Mean Top z-distance d3",
-                    "Stdev Top z-distance d3", "Mean Top z-distance d4", "Stdev Top z-distance d4",
-                    "Mean Top z-distance d5", "Stdev Top z-distance d5", "Mean Bottom surface z-distance d0",
-                    "Stdev Bottom surface z-distance d0", "Mean Bottom surface z-distance d1",
-                    "Stdev Bottom surface z-distance d1", "Mean Bottom surface z-distance d2",
-                    "Stdev Bottom surface z-distance d2",
-                    "Mean Bottom surface z-distance d3", "Stdev Bottom surface z-distance d3",
-                    "Mean Bottom surface z-distance d4",
-                    "Stdev Bottom surface z-distance d4", "Mean Bottom surface z-distance d5",
-                    "Stdev Bottom surface z-distance d5",
-                    "Mean Top surface z-distance d0", "Stdev Top surface z-distance d0",
-                    "Mean Top surface z-distance d1",
-                    "Stdev Top surface z-distance d1", "Mean Top surface z-distance d2",
-                    "Stdev Top surface z-distance d2",
-                    "Mean Top surface z-distance d3", "Stdev Top surface z-distance d3",
-                    "Mean Top surface z-distance d4",
-                    "Stdev Top surface z-distance d4", "Mean Top surface z-distance d5",
-                    "Stdev Top surface z-distance d5"]
+    allGFPvals = [gfp["Centroid"], gfp["Volume"], gfp["X span"], gfp["Y span"], gfp["Z span"], gfp["MIP area"],
+                  gfp["Max feret"], gfp["Min feret"], gfp["Mean feret"], gfp["2D Aspect ratio"], gfp["Volume fraction"],
+                  gfp["Count per cell"],
+                  gfp["Orientation"], gfp["z-distribution"], gfp["radial distribution 2D"],
+                  gfp["radial distribution 2Dmean"], gfp["radial distribution 3D"],
+                  gfp["Mean Volume"], gfp["Mean 2D distance to wall d0"], gfp["Stdev 2D distance to wall d0"],
+                  gfp["Mean3D distance to wall d0"],
+                  gfp["Stdev 3D distance to wall d0"], gfp["Mean 2D distance to wall d1"],
+                  gfp["Stdev 2D distance to wall d1"], gfp["Mean3D distance to wall d1"],
+                  gfp["Stdev 3D distance to wall d2"], gfp["Mean 2D distance to wall d3"],
+                  gfp["Stdev 2D distance to wall d3"], gfp["Mean3D distance to wall d3"],
+                  gfp["Stdev 3D distance to wall d3"], gfp["Mean 2D distance to wall d4"],
+                  gfp["Stdev 2D distance to wall d4"], gfp["Mean3D distance to wall d4"],
+                  gfp["Stdev 3D distance to wall d4"], gfp["Mean 2D distance to wall d5"],
+                  gfp["Stdev 2D distance to wall d5"], gfp["Mean3D distance to wall d5"],
+                  gfp["Stdev 3D distance to wall d5"], gfp[f"Mean Bottom z-distance d0"],
+                  gfp[f"Stdev Bottom z-distance d0"], gfp[f"Mean Bottom z-distance d1"],
+                  gfp[f"Stdev Bottom z-distance d1"], gfp[f"Mean Bottom z-distance d2"],
+                  gfp[f"Stdev Bottom z-distance d2"], gfp[f"Mean Bottom z-distance d3"],
+                  gfp[f"Stdev Bottom z-distance d3"], gfp[f"Mean Bottom z-distance d4"],
+                  gfp[f"Stdev Bottom z-distance d4"], gfp[f"Mean Bottom z-distance d5"],
+                  gfp[f"Stdev Bottom z-distance d5"], gfp[f"Mean Top z-distance d0"], gfp[f"Stdev Top z-distance d0"],
+                  gfp[f"Mean Top z-distance d1"],
+                  gfp[f"Stdev Top z-distance d1"], gfp[f"Mean Top z-distance d2"], gfp[f"Stdev Top z-distance d2"],
+                  gfp[f"Mean Top z-distance d3"],
+                  gfp[f"Stdev Top z-distance d3"], gfp[f"Mean Top z-distance d4"], gfp[f"Stdev Top z-distance d4"],
+                  gfp[f"Mean Top z-distance d5"],
+                  gfp[f"Stdev Top z-distance d5"], gfp[f"Mean Bottom surface z-distance d0"],
+                  gfp[f"Stdev Bottom surface z-distance d0"],
+                  gfp[f"Mean Bottom surface z-distance d1"],
+                  gfp[f"Stdev Bottom surface z-distance d1"], gfp[f"Mean Bottom surface z-distance d2"],
+                  gfp[f"Stdev Bottom surface z-distance d2"],
+                  gfp[f"Mean Bottom surface z-distance d3"],
+                  gfp[f"Stdev Bottom surface z-distance d3"], gfp[f"Mean Bottom surface z-distance d4"],
+                  gfp[f"Stdev Bottom surface z-distance d4"],
+                  gfp[f"Mean Bottom surface z-distance d5"],
+                  gfp[f"Stdev Bottom surface z-distance d5"], gfp[f"Mean Top surface z-distance d0"],
+                  gfp[f"Stdev Top surface z-distance d0"],
+                  gfp[f"Mean Top surface z-distance d1"],
+                  gfp[f"Stdev Top surface z-distance d1"], gfp[f"Mean Top surface z-distance d2"],
+                  gfp[f"Stdev Top surface z-distance d2"],
+                  gfp[f"Mean Top surface z-distance d3"],
+                  gfp[f"Stdev Top surface z-distance d3"], gfp[f"Mean Top surface z-distance d4"],
+                  gfp[f"Stdev Top surface z-distance d4"],
+                  gfp[f"Mean Top surface z-distance d5"],
+                  gfp[f"Stdev Top surface z-distance d5"]]
+
     print(f"{len(cellpropnames)}:{len(allCellvals)}")
     print(f"{len(DNApropnames)}:{len(allDNAvals)}")
     print(f"{len(GFPpropnames)}:{len(allGFPvals)}")

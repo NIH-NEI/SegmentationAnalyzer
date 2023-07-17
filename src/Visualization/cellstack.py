@@ -75,7 +75,10 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", d
         else:
             structuring_element = octahedron(1)
         val = max(np.unique(img_ACTIN))
-        dilated_img_ACTIN = binary_dilation(img_ACTIN > 0, structure=structuring_element, iterations=dilation) * val
+        if dilation:
+            dilated_img_ACTIN = binary_dilation(img_ACTIN > 0, structure=structuring_element, iterations=dilation) * val
+        else:
+            dilated_img_ACTIN = img_ACTIN.copy()
         img_DNA = img_DNA & dilated_img_ACTIN
         img_GFP = img_GFP & dilated_img_ACTIN
         mergedchannel = np.stack([img_ACTIN, img_DNA, img_GFP], axis=0)
@@ -149,7 +152,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
         for stackid, (actinfile, dnafile, GFPfile) in enumerate(zip(actinfiles, dnafiles, GFPfiles)):
             week, rep, w, r, fov, fovno, basename = datautils.getwr_3channel(dnafile, actinfile, GFPfile)
             t = ep.find_treatment(r)
-            r = r % 5 # to account for when user doesn't precalculate it.
+            r = r % 5  # to account for when user doesn't precalculate it.
             if t in ts and r in rs and fovno in fovnos:
                 print(f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t"
                       f"|| Field of view: {fov}, {fovno}\t|| Basename: {basename}")
