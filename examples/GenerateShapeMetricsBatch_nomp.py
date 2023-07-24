@@ -157,7 +157,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 GFPfilepath = join(gfpfolder, GFPfile)
                 Actinfilepath = join(cellfolder, actinfile)
                 DNAfilepath = join(cellfolder, dnafile)
-                labelactin, labeldna = stackio.read_get_labelledstacks(Actinfilepath, DNAfilepath)
+                labelactin, labeldna = stackio.read_get_segmented_stacks(Actinfilepath, DNAfilepath)
                 img_GFP = stackio.opensegmentedstack(GFPfilepath)
 
                 print(

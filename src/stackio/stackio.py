@@ -82,9 +82,9 @@ def getlabelledstack(img, debug=False):
     return lblimg
 
 
-def read_get_labelledstacks(Actinfilepath, DNAfilepath, debug=False):
+def read_get_segmented_stacks(Actinfilepath, DNAfilepath, debug=False):
     """
-    Open segmented files for coregistered channels and returns labelled stacks.
+    Open segmented files for coregistered channels and returns segmented stacks.
 
     :param Actinfilepath:
     :param DNAfilepath:
