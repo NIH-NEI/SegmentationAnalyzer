@@ -430,7 +430,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                                                  add_3d_cell_outline=False)
                             # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
 
-                            processes.append((t, w, r, fovno, cell_index, Cvolume, Cmeanferet,
+                        processes.append((t, w, r, fovno, cell_index, Cvolume, Cmeanferet,
                                               executor.submit(ShapeMetrics.calculate_multiorganelle_properties,
                                                               GFPObjects, refcentroid)))
                         # print(gfp[f"Mean Bottom surface z-distance"][t, w, 0, r % 5, fovno, cell_index], end="\t")
