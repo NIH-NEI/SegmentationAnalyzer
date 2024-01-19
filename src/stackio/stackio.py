@@ -289,8 +289,8 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
 if __name__ == "__main__":
     import os, sys, re
 
-    # FOR Dominik
-    # savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
+
+    # savepath_tmm20 = "../results/"
     # subdirs = os.listdir(savepath_tmm20)
     # flist_plt = [f for f in os.listdir(savepath_tmm20) if f.__contains__('.npz')]
     # print(flist_plt)
