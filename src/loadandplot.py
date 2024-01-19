@@ -14,6 +14,20 @@ from src.stackio import stackio
 
 
 def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, percentile, logplot, vplot=True, pplot=False):
+    """
+    Plots RPE cell properties input in the data
+    Args:
+        stackdata: Stack data
+        savefolder: path to folder for saving
+        organelletype: Type of organelle
+        propertyname: Name of property being plotted
+        percentile: Percentile of data to be included (symmetrical)
+        logplot: bool - use log scale or not
+        vplot: Plot -> violinplot + stripplot
+        pplot: Plot -> Boxplot
+
+    Returns:
+    """
     try:
         properties3d = ["Centroid", "Orientation"]
         centroiddims = ["Z", "X", "Y"]
@@ -61,6 +75,17 @@ def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, percen
               help="number of standard deviations from mean included in plots")
 # @click.option("--debug", default=False, metavar="<Boolean>", help="Show extra information for debugging")
 def loadandplot(calcfolder, savefolder, percentile):
+    """
+    Load and plot all metrics using multiprocessing
+
+    Args:
+        calcfolder: calculations folder
+        savefolder: folder to save in
+        percentile: Percentile data to use, discarding outliers
+
+    Returns:
+        None
+    """
     print(calcfolder, savefolder, percentile)
     files = os.listdir(calcfolder)
     datafiles = [f for f in files if isfile(join(calcfolder, f)) if f.__contains__('.npz')]
@@ -76,11 +101,7 @@ def loadandplot(calcfolder, savefolder, percentile):
             GFPchannel, organelletype, propertyname, _ = datafile[:-4].split("_")
             # final value number is for percentile. This may need to be removed depending on the way files are named.
             stackdata = stackio.loadproperty(join(calcfolder, datafile))
-            # print(datafile)
-            # if not propertyname.__contains__("Volume"):
-            #     continue
-            # if not organelletype.__contains__("Cell"):
-            #     continue
+
             print(GFPchannel, organelletype, propertyname, float(percentile))
             print(stackdata.shape, len(np.unique(stackdata)), np.count_nonzero(~np.isnan(stackdata)))
             print("zeros: ", np.count_nonzero(stackdata == 0), end=" |")

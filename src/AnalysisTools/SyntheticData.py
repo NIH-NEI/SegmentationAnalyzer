@@ -115,7 +115,7 @@ class SyntheticCell():
         #         mu, sigma = 0, 0.1
         #         nparticles = 20
         #         random.random.normal(mu, sigma , nparticles)
-        #         # TODO: add steps to generate ellipses
+        #
         #     else:
         #         # generate 3 ellipses
         #         a = SyntheticCell.generateellipticalshape(semimajorx=2, semimajory=2, semimajorz=2, offset=[5,5,5])
@@ -171,7 +171,7 @@ class SyntheticCell():
 
 
 if __name__ == "__main__":
-    # savepath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/syntheticcell/synth.tif"
+    # savepath = "..data/../syntheticcell/synth.tif"
     #
     # SyntheticCell.standard_synthetic_cell(savepath)
     from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
@@ -180,21 +180,6 @@ if __name__ == "__main__":
     savell = True
     savepath = "../../data/temp/"
 
-    # cell = SyntheticCell.generatecuboidwithparticle()
-    # cuboid = cell[:, 0, :, :, :].squeeze()
-
-    # particle = cell[:, 1, :, :, :].squeeze()
-
-    # print("CENTROID: ", centroid/(ep.ZSCALE, ep.XSCALE, ep.YSCALE))
-    # print("VOLUME: ",volume/ep.VOLUMESCALE)
-    # print("XSPAN: ",xspan/ep.XSCALE)
-    # print("YSPAN: ",yspan/ep.YSCALE)
-    # print("ZSPAN: ",zspan/ep.ZSCALE)
-    # print("MAXFERET: ",maxferet/ep.XSCALE)
-    # print("MEANFERET: ",meanferet/ep.XSCALE)
-    # print("MINFERET: ", minferet/ep.XSCALE)
-    # print("MIPAREA: ", miparea/ep.AREASCALE)
-    # print("SPH: ",sphericity)
     cell = SyntheticCell.generate_synthetic_cell()
     print(cell.shape)
     cellobj = cell[:, 0, :, :, :].squeeze()
@@ -214,12 +199,6 @@ if __name__ == "__main__":
     # OmeTiffWriter.save(data=cuboid, uri=savepath + "cuboid.tiff", overwrite_file=True)
     if savell:
         OmeTiffWriter.save(data=cell, uri=savepath + "synthcell_scaled.tiff", overwrite_file=True)
-        # OmeTiffWriter.save(data=d2map, uri=savepath + f"d2map_scaled_{m_dilations}.tiff", overwrite_file=True)
-        # OmeTiffWriter.save(data=d3map, uri=savepath + f"d3map_scaled_{m_dilations}.tiff", overwrite_file=True)
-        # OmeTiffWriter.save(data=d2cbbox, uri=savepath + f"d2map_cbbox_{m_dilations}.tiff", overwrite_file=True)
-        # OmeTiffWriter.save(data=d3cbbox, uri=savepath + f"d3map_cbbox_{m_dilations}.tiff", overwrite_file=True)
-    # 0.13906296296296297 0.8373936702642482
-    # 0.07602171534849127 0.4781034519114344
     if printall:
         print(d2m, d2s, np.unique(d2map))
         print()

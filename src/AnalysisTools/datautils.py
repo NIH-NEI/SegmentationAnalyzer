@@ -15,10 +15,13 @@ tn = 4 for FBL
 def create3dlist(len2: int = USEDTREATMENTS, len1: int = USEDWEEKS) -> list:
     """
     Create 3d lists with dimensions len1 and len2
+    
+    Args:
+        len2: number of lists of lists
+        len1: size of each list
 
-    :param len2: number of lists of lists
-    :param len1: size of each list
-    :return: list of (lists of size len1)
+    Returns:
+        list of (lists of size len1)
     """
     return [[[] for w in range(len1)] for t in range(len2)]
 
@@ -28,11 +31,13 @@ def createlistof3dlists(n: int = 7, len2: int = USEDTREATMENTS, len1: int = USED
     Creates n 3d lists with dimensions len1 and len2. Useful when there is need for multiple
     parameters
 
+    Args:
+        n: number of lists of lists
+        len2: number of lists of lists
+        len1: size of each list
 
-    :param n: number of lists of lists
-    :param len2: number of lists of lists
-    :param len1: size of each list
-    :return: n list of (lists of size len1)
+    Returns:
+        list of (lists of size len1)
     """
     listof3dlists = []
     for i in range(n):
@@ -44,10 +49,13 @@ def checkfinite(vals: ArrayLike, debug: bool = False) -> bool:
     """
     Checks all values contained in input data structures for finite or non finite. If any value is
     not finite, returns False.
+    
+    Args:
+        vals: list, tuple, ndarray or set of values (any dimensions)
+        debug: for debugging
 
-    :param vals: list, tuple, ndarray or set of values (any dimensions)
-    :param debug: for debugging
-    :return: Boolean value True = all values are finite; False = atleast 1 nonfinite encountered
+    Returns:
+        Boolean value True = all values are finite; False = atleast 1 nonfinite encountered
     """
     arefinite, isfinite = True, True
     ignoretypes = ArrayLike
@@ -65,32 +73,16 @@ def checkfinite(vals: ArrayLike, debug: bool = False) -> bool:
     return arefinite
 
 
-def checkfinitetemp(vals: ArrayLike, debug: bool = False) -> bool:
-    """
-    TODO: update (not currently in use), all iterables
-    :param vals:
-    :param debug:
-    :return:
-    """
-    arefinite, isfinite = True, True
-    # for val in vals:
-    #     # print(val, vals)
-    #     isfinite = np.isfinite(val)
-    #     if not isfinite:
-    #         if debug:
-    #             print("nonfinite encountered: ", val)
-    #         return False
-    #     arefinite = isfinite and arefinite
-    # # print("CHECK2: ",arefinite)
-    return arefinite
-
-
 def generatedataframe(stackdata: np.ndarray, propertyname: str = "Propertyname") -> pd.DataFrame:
     """
     Converts stack based data into a pandas dataframe using multi-indexing.
-    :param stackdata: data divided into stacks
-    :param propertyname: name of property
-    :return: Multiindexed Dataframe
+    
+    Args:
+        stackdata: data divided into stacks
+        propertyname: name of property
+
+    Returns:
+        Multiindexed Dataframe
     """
     print("gdf: ", stackdata.shape, flush=True)
     y = boolean_indexing(stackdata)
@@ -103,12 +95,16 @@ def generatedataframe(stackdata: np.ndarray, propertyname: str = "Propertyname")
 def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Property", usedchannels="channel",
                              basendim=7) -> pd.DataFrame:
     """
+    Generated indexed dataframe from input stack
+    
+    Args:
+        stackdata: stack 
+        propertyname: Name of property, e.g. "Volume".
+        usedchannels: list of channels(string). Can handle single string instead of lists
+        basendim:  used with stack dimension for level of abstraction
 
-    :param stackdata:
-    :param propertyname:
-    :param usedchannels:
-    :param basendim:
-    :return:
+    Returns:
+        Multi-indexed dataframe with names: "Treatment", "Week", "Channel", "Well", "FOV", "Cell_ID", "Organelle_ID"
     """
     stackdims = stackdata.ndim
     abstraction = basendim - stackdims
@@ -134,10 +130,13 @@ def generateindexeddataframe(stackdata: np.ndarray, propertyname: str = "Propert
 def generatedataframeind(stackdata: np.ndarray, propertyname: str = "Property",
                          useboolean: bool = False) -> pd.DataFrame:
     """
-    :param stackdata: data divided into stacks
-    :param propertyname: name of property
-    :param useboolean:
-    :return:
+    Args:
+        stackdata: data divided into stacks
+        propertyname: name of property
+        useboolean:
+
+    Returns:
+        dataframe
     """
     y = boolean_indexing(stackdata)
     labelids = np.arange(y.shape[-1])
@@ -149,8 +148,21 @@ def generatedataframeind(stackdata: np.ndarray, propertyname: str = "Property",
 
 
 def expandToNdim(stackdata: np.ndarray, setdims: int = 7, mindims: int = 4, maxdims: int = 7) -> np.ndarray:
+    """
+    Convert stack to a higher dimensional array
+
+    Args:
+        stackdata: input stack
+        setdims: higher dimension value desired
+        mindims: minimum value for setdims
+        maxdims: maximum value for setdims
+
+    Returns:
+        Higher dimensional stack
+    """
     dims = stackdata.ndim
     print(dims)
+    assert mindims <= setdims <= maxdims
     if dims < setdims:
         for i in range(setdims - dims):
             stackdata = np.expand_dims(stackdata, axis=-1)
@@ -164,9 +176,12 @@ def boolean_indexing(listoflists, fillval=np.nan) -> np.ndarray:  #
     treatment). This is required to address the issue that there may be different number of
     datapoints for each category. This is done on a list of list to convert it to a ndarray. empty values are filled with nans.
 
-    :param listoflists: list of list data structure
-    :param fillval: fill empty cells with given value
-    :return: boolean indexed array
+    Args:
+        listoflists: list of list data structure
+        fillval: fill empty cells with given value
+
+    Returns:
+        boolean indexed array
     """
     lens = np.asarray([[len(inner) for inner in outer] for outer in listoflists])
     mask = np.array([inlens[:, None] > np.arange(lens.max()) for inlens in lens])
@@ -181,9 +196,12 @@ def getFileListContainingString(folder, s) -> list:
     """
     returns a list of filenames in selected folder containing the string s.
 
-    :param folder: path to folder
-    :param s: substring
-    :return: list of filenames containing s
+    Args:
+        folder: path to folder
+        s: substring
+
+    Returns:
+        list of filenames containing s
     """
     return [f for f in listdir(folder) if isfile(join(folder, f)) if f.__contains__(s)]
 
@@ -192,12 +210,14 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
     """
     returns ordered list of filenames for DNA, Actin and GFP channel. This is to ensure the code is
     robust to any unintentional shuffling of files.
+    Args:
+        dnafnames: list of filenames - DNA Channel.
+        actinfnames: list of filenames - Actin Channel.
+        GFPfnames: list of filenames - GFP Channel.
+        debug: Prints the basename values for each channel for debugging.
 
-    :param dnafnames: list of filenames - DNA Channel.
-    :param actinfnames: list of filenames - Actin Channel.
-    :param GFPfnames: list of filenames - GFP Channel.
-    :param debug: Prints the basename values for each channel for debugging.
-    :return: ordered lists of the 3 channels with corresponding filenames at same list index.
+    Returns:
+        ordered lists of the 3 channels with corresponding filenames at same list index.
     """
     dnafiles, actinfiles, GFPfiles = [], [], []
     # tn=4
@@ -217,12 +237,12 @@ def orderfilesbybasenames(dnafnames, actinfnames, GFPfnames, debug=False) -> tup
                 print("ACTIN:", baseaname)
             if basedname == baseaname:
                 for Tf in GFPfnames:
-                    ############################# temporary for inlcuding lamp1 case  TODO:simplify in final version
+                    ############################# temporary for inlcuding lamp1 case
                     Tftemp = Tf
                     if Tf.__contains__("s2") and not Tf.__contains__("_s2"):
                         Tftemp = Tf.replace("s2", "_s2")
                     baselname = "_".join(Tftemp.split("_")[:3])  # check
-                    ############################# temporary for inlcuding lamp1 case  TODO:simplify in final version
+                    ############################# temporary for inlcuding lamp1 case
                     if debug:
                         print("GFP:", baselname)
                     if basedname == baselname:
@@ -244,11 +264,13 @@ def getwr_3channel(df, af, lf, debug=False):
     """
     Checks names of files and ensures the files correspond to each other. Returns week and replicate
     information for calculation purposes.
+    Args:
+        df: dna file names
+        af: actin file names
+        lf: gfp channel file names
 
-    :param df: dna file names
-    :param af: actin file names
-    :param lf: gfp channel file names
-    :return: week id, replicate id, week no. replicate number, common base string
+    Returns:
+        week id, replicate id, week no. replicate number, common base string
     """
 
     lf = lf.replace("s2", "")  # NOTE: temporary for lamp1
@@ -267,5 +289,14 @@ def getwr_3channel(df, af, lf, debug=False):
 
 
 def array_nan_equal(a, b):
+    """
+    Performs numpys array_equal while ignoring nan values
+    Args:
+        a: array a
+        b: array b
+
+    Returns:
+        Elementwise equality comparison boolean array
+    """
     m = np.isfinite(a) & np.isfinite(b)
     return np.array_equal(a[m], b[m])

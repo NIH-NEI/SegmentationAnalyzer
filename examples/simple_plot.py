@@ -7,7 +7,7 @@ from src.stackio import stackio
 import seaborn as sns
 from src.AnalysisTools import statcalcs, datautils
 
-savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
+savepath_tmm20 = "" # add path here
 flist_plt = [f for f in os.listdir(savepath_tmm20) if f.__contains__('.npz')]
 print(flist_plt)
 line_names = sorted(['1085A1', '1085A2', '1097F1', '48B1', '48B2', 'BBS10B1', 'BBS16B2', 'D3C', 'LCA5A1', 'LCA5A2',

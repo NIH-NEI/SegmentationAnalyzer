@@ -71,15 +71,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
     chnls = experimentalparams.getusedchannels(actinfiles)
     no_chnls = len(chnls)
     badfiles = []
-    # Cell = {}
-    # DNA = {}
-    # GFP = {}
-    # Organelles = [Cell,DNA, GFP]
-    # Properties = ["Volume", "Centroids","Xspan"]
-    # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
-    # for Organelle in Organelles:
-    #     for propertyname in properties:
-    #         Organelle[propertyname] = np.nan *
     cell = {}
     cell["shape"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells)
     cell["shape3d"] = (usedTs, usedWs, no_chnls, usedwells, totalFs, maxcells, 3)
@@ -150,7 +141,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     print(f"Skipping {basename} since using a smaller set.")
                     continue
             print(
-                f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| Field of view: {fov}, {fovno}\t||Basename: {basename}")
+                f"\nWeek:{week}, {w}\t|| Replicate: {rep}, {r}\t|| Treatment {t}\t|| "
+                f"Field of view: {fov}, {fovno}\t||Basename: {basename}")
             if w < usedWs:
 
                 ##GET LABELLED IMAGES
@@ -160,8 +152,8 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                 labelactin, labeldna = stackio.read_get_segmented_stacks(Actinfilepath, DNAfilepath)
                 img_GFP = stackio.opensegmentedstack(GFPfilepath)
 
-                print(
-                    f"img_GFP.shape: {img_GFP.shape} == labelactin.shape: {labelactin.shape} == labeldna.shape: {labeldna.shape}")
+                print(  f"img_GFP.shape: {img_GFP.shape} == labelactin.shape: "
+                        f"{labelactin.shape} == labeldna.shape: {labeldna.shape}")
 
                 is_ = list(np.unique(labelactin))
                 js_ = list(np.unique(labeldna))
@@ -228,8 +220,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     # print("satisfied biological conditions?", biological_conditions_satisfied)
                     if biological_conditions_satisfied:  # and datautils.checkfinitetemp(cellattribute_testvals[1:8]):
                         ##DNA members
-                        # savethisimage = False
-                        # subtract 1 since this matrix uses indices from 0
+
                         memberdnas = np.where(dna_actin_membership[obj_index - 1, :])[0]
                         no_members = memberdnas.shape[0]
                         DNAObjects = np.zeros_like(labelactin[slices])
@@ -314,12 +305,10 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                             cellstack.mergestack(CellObject, DNAObjects, GFPObjects,
                                                  savename=join(cellstackfolder, stackfilename), save=True,
                                                  add_3d_cell_outline=False)
-                        # print("shapes: ", CellObject.shape, DNAObjects.shape, GFPObjects.shape)
                         Gcount, Gcentroid, Gvolume, Gspan, Gyspan, Gzspan, Gmaxferet, Gmeanferet, Gminferet, Gmiparea, \
                             Gorient3D, Gz_dist, Gradial_dist2d, Gradial_dist3d, Gmeanvol = ShapeMetrics.calculate_multiorganelle_properties(
                             GFPObjects, Ccentroid)
-                        # print("gcount:", Gcount)
-                        # print("indorient", indorient3D.shape, indorient3D.T.shape)
+
                         gfp["cpc"][t, w, 0, r % 5, fovno, obj_index] = Gcount
                         gfp["meanvols"][t, w, 0, r % 5, fovno, obj_index] = Gmeanvol
                         gfp["Centroids"][t, w, 0, r % 5, fovno, obj_index, :] = Gcentroid
@@ -341,7 +330,6 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
             end_ts = datetime.datetime.now()
             print(f"{basename} done in {str(end_ts - start_ts)}")
 
-            # print(f"{channel}volvalues : {np.count_nonzero(~np.isnan(gfp["Volumes"]))}")
         except Exception as e:
             print("Exception: ", e, traceback.format_exc())
 
@@ -354,7 +342,7 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                   dna["maxferet"], dna["minferet"], dna["aspectratio2d"], dna["volume_fraction"], dna["sphericity"]]
     DNApropnames = ["Centroid", "Volume", "X span", "Y span", "Z span", "MIP area", "Max feret", "Min feret",
                     "2D Aspect ratio", "Volume fraction", "Sphericity"]
-    # dnastackinvaginationvfrac
+
     allGFPvals = [gfp["Centroids"], gfp["Volumes"], gfp["xspan"], gfp["yspan"], gfp["zspan"], gfp["miparea"],
                   gfp["maxferet"], gfp["minferet"], gfp["aspectratio2d"], gfp["volfrac"], gfp["cpc"],
                   gfp["orientations"], gfp["zdistr"], gfp["raddist2d"], gfp["raddist2dmean"], gfp["raddist3d"],
@@ -364,17 +352,17 @@ def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: Pa
                     "radial distribution 2D", "normalized radial distribution 2D", "radial distribution 3D",
                     "Mean Volume"]
     propnames = [cellpropnames, DNApropnames, GFPpropnames]
-    # indGFPvals = indGFPcentroidhs, indGFPvolumes, indGFPzspans, indGFPxspans, indGFPyspans, indGFPmaxferets, indGFPminferets  # , indGFPorients
-    withstrpplt = True
-    sigma = 2
+
+    # withstrpplt = True
+    # sigma = 2
     strsigma = "95.45"
 
     orgenelletype = ["Cell", "DNA", channel]
     propertycategory = [allCellvals, allDNAvals, allGFPvals]
-    # propertycategory_names = [allCELLvalnames,allDNAvalnames,allGFPvalnames]
+
     generateplots, savedata = False, True
-    # for otype in orgenelletype:
     uselog = [False, False, True]
+
     for o, (propertytype, otype) in enumerate(zip(propertycategory, orgenelletype)):
         for i, prop in enumerate(propertytype):
             if savedata:
@@ -403,8 +391,4 @@ if __name__ == "__main__":
 
     args = sys.argv
     print(f"args:{args})")
-    # exit()
-    # segmented_ch_folder_GFP = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/'
-    # segmented_ch_folder_Cell = 'C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/CETN2/Cell/csv/'
-    # savepath = '../Results/2022/May6/cetn2/calcs/'
     calculateCellMetrics()

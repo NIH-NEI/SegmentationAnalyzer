@@ -13,12 +13,15 @@ from src.AnalysisTools.dtypes import PathLike
 def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=False, debug=False):
     """
 
-    :param CellObject: 3-dimensional cell segmentation stack
-    :param DNAObjects: 3-dimensional DNA segmentation stack
-    :param GFPObjects: 3-dimensional gfp channel segmentation stack
-    :param savename: Name of savefile
-    :param save: whether to save the file
-    :return: True if operation succeeded
+    Args:
+        CellObject: 3-dimensional cell segmentation stack
+        DNAObjects: 3-dimensional DNA segmentation stack
+        GFPObjects: 3-dimensional gfp channel segmentation stack
+        savename: Name of savefile
+        save: whether to save the file
+
+    Returns:
+         True if operation succeeded
     """
     success = False
     try:
@@ -52,14 +55,18 @@ def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_c
 
 def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", dilation=0, dilatexyonly=True):
     """
+    Merge 3 channels into a single stack
 
-    :param Cellstackpath: Path to 3-dimensional cell segmentation stack
-    :param DNAstackpath:  Path to 3-dimensional DNA segmentation stack
-    :param GFPstackpath:  Path to 3-dimensional GFP segmentation stack
-    :param savename: name of save file
-    :param dilation: number of dilations (applied to cell only to obtain GFP and DNA at borders)
-    :param dilatexyonly: only dilate along xy plane. If set to False, will dilate along x,y and z directions.
-    :return:
+    Args:
+        Cellstackpath: Path to 3-dimensional cell segmentation stack
+        DNAstackpath:  Path to 3-dimensional DNA segmentation stack
+        GFPstackpath:  Path to 3-dimensional GFP segmentation stack
+        savename: name of save file
+        dilation: number of dilations (applied to cell only to obtain GFP and DNA at borders)
+        dilatexyonly: only dilate along xy plane. If set to False, will dilate along x,y and z directions.
+
+    Returns:
+        Boolean success if successfully merged and saved
     """
     from src.stackio import stackio
     success = False
@@ -93,10 +100,10 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", d
 
 
 @click.command(options_metavar="<options>")
-@click.option("--segmentpath", default="C:/Users/satheps/PycharmProjects/Results/2022/final_segmentations/",
+@click.option("--segmentpath", default="..data/final_segmentations/",
               help="Path to folder containing segmentations. Folder must contain GFP segmentations. <segmentpath>/Cell "
                    "folder must contain corresponding Actin and DNA segmentations ", metavar="<PathLike>")
-@click.option("--savepathdir", default="C:/Users/satheps/PycharmProjects/Results/2022/Imaris visualizations/",
+@click.option("--savepathdir", default="..data/Imaris visualizations/",
               metavar="<PathLike>", help="Path to folder where imaris visualization-ready stacks should be saved")
 @click.option("--ndilations", default=1, metavar="<int>", help="Number of cell dilations to be used for GFP channel")
 @click.option("--treatments", "ts", default=[0, 1], metavar="List<int>", multiple=True,
@@ -109,15 +116,19 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", d
 def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int, ts: list = [0, 1], rs: list = [0, 5],
                    fovnos: list = [5]):
     """
+    Merges all Actin, DNA and GFP channel stacks in given directories
 
-    :param segmentpath: Path to Directory containing folders for each channel. Each channel subdirectory must contain
-    data organized such that "Cell" subfolder contains DNA and ACTIN (actin-based Cell borders) segmentation and
-    :param savepathdir: Folder to save merged stacks in
-    :param ndilations: number of cell dilations. Dilations are applied to cells only for the purpose of obtaining GFP and DNA within dilated boundaries.
-    :param ts: treatments to be used from [0,1]
-    :param rs: replicates(wells) used from [0,1,2,3,4]
-    :param fovnos: fields of view from[0,1,2,3,4,5]
-    :return:
+    Args:
+        segmentpath: Path to Directory containing folders for each channel. Each channel subdirectory must contain
+        data organized such that "Cell" subfolder contains DNA and ACTIN (actin-based Cell borders) segmentation and
+        savepathdir: Folder to save merged stacks in
+        ndilations: number of cell dilations. Dilations are applied to cells only for the purpose of obtaining GFP and DNA within dilated boundaries.
+        ts: treatments to be used from [0,1]
+        rs: replicates(wells) used from [0,1,2,3,4]
+        fovnos: fields of view from[0,1,2,3,4,5]
+
+    Returns:
+        None
     """
 
     import os
@@ -126,7 +137,6 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
     # mergestack(cell, dna, gfp, savename="test")
 
     from src.AnalysisTools import datautils, experimentalparams as ep
-    # from src.stackio import stackio
     from os.path import join
     import os
 
@@ -141,7 +151,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
         dnafnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'DNA_RPE.tif')
         actinfnames = datautils.getFileListContainingString(segmented_ch_folder_Cell, 'Actin_RPE.tif')
         GFPfnames = datautils.getFileListContainingString(segmented_ch_folder_GFP, '_GFP')
-        # savename = 'C:/Users/satheps/PycharmProjects/Results/2022/May6/cetn2/illustrations_CETN2/imgs/'
+        # savename = '..data/../cetn2/illustrations_CETN2/imgs/'
         savename = f'{savepathdir}{ch}/imgs/'
         if not os.path.exists(savename):
             os.mkdir(savename)

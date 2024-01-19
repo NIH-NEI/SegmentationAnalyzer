@@ -1,4 +1,4 @@
-class Cell():
+class Cell:
     def __init__(self, inputchannelname=None):
         self.gfp = GFP()
         self.selected = True  # by default

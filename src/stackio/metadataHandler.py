@@ -12,16 +12,18 @@ def createcelldict(id, parent=None, xspan=None, yspan=None, zspan=None, centroid
     Creates and returns a dictinary object by assigning and Id to each cell and associating its
     properties with the id. This metadata can be saved for future use.
 
-    :param id: cell id within stack
-    :param parent: stack id
-    :param xspan: feret measurement along x axis
-    :param yspan: feret measurement along y axis
-    :param zspan: feret measurement along z axis
-    :param centroid: centroid (z,y,x)
-    :param volume: cell volume
-    :param mip_area:
-    :param edgetag:
-    :return:
+    Args:
+        id: cell id within stack
+        parent: stack id
+        xspan: feret measurement along x axis
+        yspan: feret measurement along y axis
+        zspan: feret measurement along z axis
+        centroid: centroid (z,y,x)
+        volume: cell volume
+        mip_area: Maximum intensity projection area
+        edgetag: edge tag - if cell touches top or bottom, this value is set to t/b
+    Returns:
+        Cell dictionary
     """
     if (id is None) or (parent is None) or (xspan is None) or (yspan is None) or (
             zspan is None) or (centroid is None) or (volume is None) or (mip_area is None) or (
@@ -54,6 +56,12 @@ class cellobject():
 
 
 def writeCellMetadata(jsonfile, individualcelldict):
+    """
+    Args:
+        jsonfile: jsonfile name
+        individualcelldict:  Dictionary for single cell
+    :return: 
+    """
     try:
         with open(jsonfile, 'w') as jf:
             json.dump(individualcelldict, jf, indent=1)
@@ -66,6 +74,15 @@ def writeCellMetadata(jsonfile, individualcelldict):
 
 
 def readCellMetadata(jsonfile):
+    """
+    Loads json metadata file
+    
+    Args:
+        jsonfile: 
+    
+    Returns: 
+        json metadata or 0 if failed to load
+    """
     try:
         with open(jsonfile) as jf:
             a = json.load(jf)
@@ -75,6 +92,15 @@ def readCellMetadata(jsonfile):
 
 
 def parsejson(info):
+    """
+    Parses information extracted from json file
+
+    Args:
+        info:   information extracted from json file
+
+    Returns:
+        parsed properties
+    """
     vol = info['volume'] * ep.VOLUMESCALE
     xspan = info['xspan'] * ep.XSCALE
     yspan = info['yspan'] * ep.YSCALE
@@ -93,7 +119,7 @@ def parsejson(info):
 
 
 if __name__ == "__main__":
-    wpath = "../Results/2021/mar24/jsontest/"
+    wpath = "../Results/../jsontest/"
     jsonfile = wpath + "test.json"
     allcells = []
     for i in range(10):

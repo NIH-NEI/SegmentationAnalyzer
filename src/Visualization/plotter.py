@@ -13,6 +13,15 @@ a4_dims = (11.7, 8.27)
 
 
 def returnlogbounds(stack, getintegers=True):  # non int doesnt work since we need range()
+    """
+    Return bounds for logplot
+    
+    stack: stack
+    getintegers:convert to integers
+     
+    Returns:
+        min and max log bounds
+    """
     minval = np.log10(np.nanmin(stack))
     maxval = np.log10(np.nanmax(stack))
     if np.isnan(minval):
@@ -35,16 +44,18 @@ def returnlogbounds(stack, getintegers=True):  # non int doesnt work since we ne
 
 def plotstattests(data, testname, savepath, channel, propertyname, percentile=90, stattype=None, commonparameter=""):
     """
-
-    :param data:
-    :param testname:
-    :param savepath:
-    :param channel:
-    :param propertyname:
-    :param percentile:
-    :param stattype:
-    :param commonparameter:
-    :return:
+    Plot statistical test results
+    Args:
+        data: data
+        testname: name of statistical test
+        savepath: path to save into
+        channel: channel name
+        propertyname: property name
+        percentile: percentile of data to keep, removing outliers
+        stattype: statistic type : e.g pvalue, fvalue
+        commonparameter: parameter to not compare, e.g. weeks, treatments
+    Returns:
+        None
     """
     if stattype is None:
         stattype = ['fvalue', 'pvalue']
@@ -84,13 +95,17 @@ def plotstattests(data, testname, savepath, channel, propertyname, percentile=90
 
 def stat_tests(stack, savepath="", channel="", propertyname="", percentile=90, generateplot=True):
     """
+    Conduct all stat tests and plot them
 
-    :param stack:
-    :param savepath:
-    :param channel:
-    :param propertyname:
-    :param percentile:
-    :return:
+    Args:
+        stack: stack
+        savepath: path to save files into
+        channel: channel name
+        propertyname: property name
+        percentile: percentile of data to include
+    
+    Returns:
+        None
     """
     weeks = experimentalparams.WS
     treatments = experimentalparams.TREATMENT_TYPES
@@ -151,21 +166,24 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", percentile
                     selected_method_type=None, savepath="", withstrpplt=True, scaletype="count",
                     uselog=False, statplots=True, keep_outliers=False):
     """
-        scaletype can be count, width or area
+    Plot data as a violin and strip plot
 
-        :param stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
-        :param channel:
-        :param propname:
-        :param units:
-        :param percentile_include:
-        :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
-        :param savepath:
-        :param withstrpplt:
-        :param scaletype:
-        :param uselog:
-        :param statplots:
-        :return:
-        """
+    Args:
+        scaletype: can be count, width or area
+        stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+        channel: channel name
+        propname: property name
+        units: units for property
+        percentile_include: percentile data to be included, removing outliers
+        selected_method_type:method type can be "Individual", "Stackwise", "platewise"
+        savepath: path to save files in
+        withstrpplt: include a stripplot
+        uselog: Use log scales
+        statplots: get statistical plots
+        
+    Returns:
+        None
+    """
     # withoutliers = False
     method_types = ["Individual", "Stackwise", "Platewise"]
     useall = False
@@ -189,10 +207,10 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", percentile
     stackdata_rmoutlier_well = statcalcs.removestackoutliers(stackdata, m=sigma, abstraction=2)
 
     print(f"stackdata, rmind, rmstack, rwell"
-        f"{np.count_nonzero(~np.isnan(stackdata))}, "
-        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv))},"
-        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack))}, "
-        f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_well))}")
+          f"{np.count_nonzero(~np.isnan(stackdata))}, "
+          f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_indiv))},"
+          f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_stack))}, "
+          f"{np.count_nonzero(~np.isnan(stackdata_rmoutlier_well))}")
 
     ####################################################################################################
     if uselog:
@@ -302,19 +320,21 @@ def stdboxplot(stackdata, channel="Cell", propname="", units="", percentile_incl
     """
         scaletype can be count, width or area
 
-        :param stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
-        :param channel:
-        :param propname:
-        :param units:
-        :param percentile_include:
-        :param selected_method_type:method type can be "Individual", "Stackwise", "platewise"
-        :param savepath:
-        :param withstrpplt:
-        :param scaletype:
-        :param uselog:
-        :param statplots:
-        :return:
-        """
+    Args:
+        stackdata: ndarray, has dimensions ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
+        channel:
+        propname:
+        units:
+        percentile_include:
+        selected_method_type:method type can be "Individual", "Stackwise", "platewise"
+        savepath:
+        withstrpplt:
+        scaletype:
+        uselog:
+        statplots:
+    
+    Returns:
+    """
     include_outliers = True
     method_types = ["Individual", "Stackwise", "Platewise"]
     useall = False

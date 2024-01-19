@@ -185,7 +185,7 @@ def convertfromnpz(npzpath, targetdir=None, totype="csv", save=True):
             csvpath = os.path.join(targetdir, csvfilename)
             check = array3ddf.to_csv(csvpath)
         else:
-            return array3ddf  # TODO : Support for merging various properties in one file
+            return array3ddf
         if check is None:
             isconverted = True
 
@@ -276,7 +276,7 @@ def convertfromnpz_allproperties(npzfolderpath, targetdir=None, totype="csv", or
                 # del array3ddfs
                 check = array3ddfs.to_csv(csvpath)
             else:
-                return array3ddfs  # TODO : Support for merging various properties in one file
+                return array3ddfs
             if check is None:
                 isconverted = True
         except Exception as ex_csv:
@@ -320,25 +320,21 @@ if __name__ == "__main__":
     #     csvpath = os.path.join(savepath_tmm20, csvfilename)
     #     check = indexedstack.dropna().to_csv(csvpath)
     """f
-    convertfromdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Feb18/TOM/results_all/npz/'
-    targetdir = 'C:/Users/satheps/PycharmProjects/Results/2022/Mar18/combinecsv/'
+    convertfromdir = '..data/../TOM/results_all/npz/'
+    targetdir = '..data/combinecsv/'
     
     #####################################################################################
     convertfromnpz_allproperties(npzfolderpath=convertfromdir, targetdir=targetdir)
     #####################################################################################
     """
-    # LOOP todo:1.  MYH MYH, 2. CETN2 CETN2
-    dirlist = 'D:/WORK/NIH_new_work/CTNNB1_20230522/GJA/'
+    # LOOP t
+    dirlist = '../CTNNB1_20230522/GJA/'
     # targetdir = 'D:/WORK/NIH_new_work/Final_calculations/'
     subdirs = os.listdir(dirlist)
     print(subdirs)
     # subdirs = [dirr for dirr in subdirs if os.path.isdir(os.path.abspath(dirr))]
     print(os.path.abspath(subdirs[0]))
     for subdir in subdirs:  # subdirectory for all npz files
-
-        # if not subdir in ["LAMP1","RAB5"]:
-        # if subdir in ["ACTB", "CETN2","CTNNB1","DSP","FBL","GJA1","LAMP1","LC3B","MYH"]:
-        #     continue
 
         organelles = ["Cell", "DNA", subdir]
         # organelles = ["Cell"]
@@ -367,7 +363,7 @@ if __name__ == "__main__":
     # n1, n2, n3, n4, n5 = 12, 42, 15, 10, 3
     # exshape = (n1,n2,n3,n4,n5)
     # testmat = np.arange(n1*n2*n3*n4*n5).reshape(exshape)
-    # fpath = "C:/Users/satheps/PycharmProjects/Results/2022/Jan21/savetest/testmat.npz"
+    # fpath = "..data/../savetest/testmat.npz"
     #
     # saveproperty(testmat, filepath=fpath, type = "npz")
     # loaded = loadproperty(fpath)

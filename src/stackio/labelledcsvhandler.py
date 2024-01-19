@@ -7,13 +7,17 @@ import tifffile
 
 def csvtoids(csvname, shape=None, save=False, returnvals=True, debug=False):
     """
+    Converts compressed csv segmentations to ndarray and saves and/or returns it
+    Args:
+        csvname: csv name
+        shape: dimensions of stack
+        save: Boolean
+        returnvals: Returns values if True
+        debug: verbosity for debugging
 
-    :param csvname:
-    :param shape:
-    :param save:
-    :param returnvals:
-    :param debug:
-    :return:
+    Returns:
+        array if returnvals set to True
+
     """
     if shape is None:
         shape = (27, 1076, 1276)
@@ -40,14 +44,14 @@ def csvtoids(csvname, shape=None, save=False, returnvals=True, debug=False):
 
 
 if __name__ == '__main__':
-    csvname = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE.csv"
+    csvname = ""
     # tifpath = "../Results/2022/Mar18/csvtest/sec61/exptif/"
     shape = (27, 1078, 1278)
     # args = [None, csvname, shape]
 
     # csvtoids(csvname, shape)
-    path1 = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_ids_py.tif"
-    path2 = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_ids.tif"
+    path1 = "..data/../csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_ids_py.tif"
+    path2 = "..data/../csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_ids.tif"
     tif1 = tifffile.imread(path1)
     tif2 = tifffile.imread(path2)
     tif1bw = tif1 > 0
@@ -58,7 +62,7 @@ if __name__ == '__main__':
     print(tif1.shape, tif2.shape, mask.shape, marr.shape)
     marr[maskbw] = 0
     # marr[mask] = 0
-    maskpath = "C:/Users/satheps/PycharmProjects/Results/2022/Mar18/csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_eq.tif"
+    maskpath = "..data/../csvtest/sec61/P1-W1-SEC_G02_F001_Actin_RPE_eq.tif"
     tifffile.imwrite(maskpath, marr, compress=6, photometric='minisblack')
     debug = False
     if debug:

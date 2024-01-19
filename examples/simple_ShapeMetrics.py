@@ -15,9 +15,9 @@ from src.AnalysisTools import experimentalparams as ep
 XSCALE_822, YSCALE_822, ZSCALE_822 = 0.0705908, 0.0705908, 0.2300000
 VOLUMESCALE_822 = XSCALE_822 * YSCALE_822 * ZSCALE_822
 if __name__ == "__main__":
-    path_tomseg = "D:/WORK/NIH_new_work/Dominik/segmented/TOM/"
-    path_cellseg = "D:/WORK/NIH_new_work/Dominik/segmented/ZO1/"
-    savepath_tmm20 = "D:/WORK/NIH_new_work/Dominik/results/"
+    path_tomseg = ""
+    path_cellseg = ""
+    savepath_tmm20 = ""
     flist_tom = [f for f in os.listdir(path_tomseg) if os.path.isfile(os.path.join(path_tomseg, f))]
     flist_cell = [f for f in os.listdir(path_cellseg) if os.path.isfile(os.path.join(path_cellseg, f))]
     total = 0

@@ -67,9 +67,11 @@ def getunits(propertyname):
 def replicate_info(_alphabets: strList = None) -> list:
     """
     Input one of the alphabets based on specific file information
-
-    :param _alphabets:
-    :return: list of replicate ids
+    
+    Args:
+        _alphabets:
+    Returns:
+         list of replicate ids
     """
     allalphabets = ["B", "C", "D", "E", "F", "G"]
     if _alphabets is None:
@@ -84,11 +86,13 @@ def replicate_info(_alphabets: strList = None) -> list:
     return reps
 
 
-def find_treatment(r):  # TODO: check with getwr_3channel for inconsistencies
+def find_treatment(r):
     """
     Returns the type of treatement based on replicate id
-    :param r: replicate id ( converted to 0-9 range)
-    :return: treatment id
+    Args:
+        r: replicate id ( converted to 0-9 range)
+    Returns:
+         treatment id
     """
     assert r < 10, "r must be in range 0-9"
     treatment = r // 5
@@ -96,6 +100,15 @@ def find_treatment(r):  # TODO: check with getwr_3channel for inconsistencies
 
 
 def find_week(filename: PathLike) -> str:
+    """
+    Returns week number
+
+    Args:
+        filename: filename
+
+    Returns:
+        week number from filename
+    """
     all_weeks = []
     for w in WS:
         if w in filename:
@@ -108,10 +121,14 @@ def find_week(filename: PathLike) -> str:
 
 def findrep(filename: str, _alphabets=None):
     """
-    Use given alphabet for
-    :param filename:
-    :param _alphabets:
-    :return:
+    Use given alphabet for finding replicate number
+
+    Args:
+        filename: filename
+        _alphabets: this is based on nomenclature used in naming files
+
+    Returns:
+        replicate number
     """
     all_reps = []
     if _alphabets is None:
@@ -130,6 +147,15 @@ def findrep(filename: str, _alphabets=None):
 
 
 def getusedchannels(filelist: str) -> list:
+    """
+    Get list of channels used in given list of files
+
+    Args:
+    filelist: list of filenames
+
+    Returns:
+         list of channels
+    """
     channels = []
     for file in filelist:
         channel = file.split("_")[0].split("-")[-1]
@@ -141,14 +167,17 @@ def getusedchannels(filelist: str) -> list:
 def check_sufficient_datapoints_per_stack(vols: list, x_spans: list, y_spans: list, z_spans: list,
                                           mip_areas: list) -> bool:
     """
-    TODO:
     Only choose stacks with 10 or more datapoints in them - this will help reduce bias from stacks with too few cells
-    :param vols: list of corresponding volumes
-    :param x_spans: list of corresponding x spans
-    :param y_spans:list of corresponding y spans
-    :param z_spans: list of corresponding z spans
-    :param mip_areas: list of corresponding mip areas
-    :return: are datapoints sufficient for stack based data?
+
+    Args:
+        vols: list of corresponding volumes
+        x_spans: list of corresponding x spans
+        y_spans:list of corresponding y spans
+        z_spans: list of corresponding z spans
+        mip_areas: list of corresponding mip areas
+
+    Returns:
+         bool: are datapoints sufficient for stack based data?
     """
     sufficient_datapoints = True
     assert (len(vols) == len(x_spans) == len(y_spans) == len(z_spans) == len(mip_areas))
@@ -162,12 +191,14 @@ def cell_biologically_valid(cell_vals, remove_cut_cells=True, vol_cutoff=50, deb
         Checks if cell (Actin/outer border enclosed object) meets minimum requirements chosen based on
     expert knowledge. This can be used to filter bad segmentations of cell data.
 
-    :param cell_vals: list of values -> centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, cell touching top(bool),cell touching bot(bool).
-    :param remove_cut_cells: True by default. Any cells touching top or bot are removed.
-    :param vol_cutoff: cutoff volume in cu. microns
-    :param debug: print out values for cell properties
-    :return: True if all conditions are met. False if any is not met (indicating biologically
-    impossible segmentation.)
+    Args:
+        cell_vals: list of values -> centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, cell touching top(bool),cell touching bot(bool).
+        remove_cut_cells: True by default. Any cells touching top or bot are removed.
+        vol_cutoff: cutoff volume in cu. microns
+        debug: print out values for cell properties
+
+    Returns:
+         True if all conditions are met. False if any is not met (indicating biologically impossible segmentation.)
     """
     [centroid, vol, x_span, y_span, z_span, max_feret, min_feret, mip_area, top, bot] = cell_vals
     if debug:
@@ -267,7 +298,7 @@ class Channel:
         else:
             raise Exception(
                 f"Invalid Channel name:{input_channel_name}. Name must be one of {self.all_channel_names}")
-        self.minarea = {  # TODO: get values from current segmenter or remove
+        self.minarea = {
             "dna": 4,
             "actin": 4,
             "membrane": 4,
@@ -293,29 +324,76 @@ class Channel:
         self.directory = None
 
     def getallallchannelnames(self):
+        """
+        Returns
+            List of all channel names
+        """
         return self.all_channel_names
 
     def getminarea(self, key):
+        """
+        returns minarea for channel
+
+        Args:
+            key: channelname
+        Returns:
+            minarea for requested channel
+        """
         return self.minarea[key]
 
     def getproteinname(self, key):
+        """
+        returns protein name for channel
+
+        Args:
+            key: channelname
+        Returns:
+            protein name for requested channel
+        """
         return self.channel_protein[key]
 
     def getorganellestructurename(self, key):
+        """
+        returns organelle structure name for channel
+
+        Args:
+            key: channelname
+        Returns:
+            organelle structure name for requested channel
+        """
         return self.organelle_structure[key]
 
     def validchannelname(self, key):
+        """
+        returns if channel name is valid (known to class)
+
+        Args:
+            key: channelname
+        Returns:
+            does channel exist in class
+        """
         return key.lower() in self.all_channel_names
 
     def getrepalphabet(self, key):
+        """
+        returns naming convention alphabet for channel
+
+        Args:
+            key: channelname
+        Returns:
+             naming convention alphabet for requested channel
+        """
         return self.rep_alphabet[key]
 
     def setdirectoryname(self, channel, dname):
         """
         Use to set directory name in case it is different from channelname
-        :param channel:
-        :param dname:
-        :return:
+        channel:
+        Args:
+            channel: channel
+            dname: directory name
+        Returns:
+            None
         """
         self.directory = {
             "lmnb1": "LaminB",

@@ -13,11 +13,14 @@ WS = ep.WS
 
 def removeoutliers3dlist(alldata, m: float = 2):
     """
-    removes outliers outside of m standard deviations for 3D lists
+    removes outliers outside m standard deviations for 3D lists
 
-    :param alldata: values in 2d list of weeks and treatments.
-    :param m: number of standard deviations included. Data outside this is considered outlier data.
-    :return: data with outliers removed
+    Args:
+        alldata: values in 2d list of weeks and treatments.
+        m: number of standard deviations included. Data outside this is considered outlier data.
+
+    Returns:
+        data with outliers removed
     """
     newdata = create3dlist(USEDTREATMENTS, USEDWEEKS)
     for t, treatment in enumerate(TREATMENT_TYPES):
@@ -34,10 +37,14 @@ def removeoutliers3dlist(alldata, m: float = 2):
 
 def removeoutliers(data1darray, m: float = 2):
     """
-    removes outliers outside of m standard deviations for 1d arrays
-    :param data1darray: 1d array
-    :param m:  number of standard deviations included. Data outside this is considered outlier data.
-    :return: data with outliers removed
+    removes outliers outside m standard deviations for 1d arrays
+
+    Args:
+        data1darray: 1d array
+        m:  number of standard deviations included. Data outside this is considered outlier data.
+
+    Returns:
+        data with outliers removed
     """
     newdata = data1darray[abs(data1darray - np.mean(data1darray)) < m * np.std(data1darray)]
     return newdata
@@ -63,8 +70,11 @@ def perctosd(percentile: float = 95.452):
     """
     calculate standard deviation based on percent point function.
 
-    :param percentile: percentile
-    :return: number of standard deviations
+    Args:
+    percentile: percentile
+
+    Returns:
+         number of standard deviations
     """
     percentile = percentile / 100
     tail = percentile + (1 - percentile) / 2
@@ -87,12 +97,30 @@ def perctosd(percentile: float = 95.452):
 
 
 def getmusigma(data):
+    """
+    Get mean and standard deviation of given data
+
+    Args:
+        data:
+
+    Returns:
+         mu, sigma
+    """
     sigma = np.nanstd(data)
     mu = np.nanmean(data)
     return mu, sigma
 
 
 def getmusigma2d(data):
+    """
+    Get 2d mean and standard deviation of given data
+
+    Args:
+        data:
+
+    Returns:
+         mu, sigma
+    """
     d = data.reshape((ep.USEDTREATMENTS, ep.USEDWEEKS, -1))
     mus = np.zeros((ep.USEDTREATMENTS, ep.USEDWEEKS))
     sigmas = np.zeros((ep.USEDTREATMENTS, ep.USEDWEEKS))
@@ -103,6 +131,15 @@ def getmusigma2d(data):
 
 
 def one_way_anova(listofarrays):
+    """
+    Return p and f value of one way ANOVA for list of arrays
+
+    Args:
+        listofarrays: list of arrays
+
+    Returns:
+         ANOVA f value and p value
+    """
     assert len(listofarrays) >= 2, f" list must contain 2 or more samples. Currently{len(listofarrays)}"
     try:
         fvalue, pvalue = f_oneway(*listofarrays)
@@ -113,6 +150,15 @@ def one_way_anova(listofarrays):
 
 
 def kstest(listofarrays):
+    """
+    Return D stat and p value of one way Kolmogorov-Smirnov test for list of arrays
+
+    Args:
+        listofarrays: list of arrays
+
+    Returns:
+         Kolmogorov-Smirnov test D stat and p value
+    """
     assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
     try:
         # print("Listofarrays",*listofarrays)
@@ -125,6 +171,16 @@ def kstest(listofarrays):
 
 
 def chisquaretest(listofarrays):
+    """
+    Return chi squared and p value of one way chi-squared test for list of arrays
+
+    Args:
+        listofarrays: list of arrays
+
+    Returns:
+         chi squared and p value
+    """
+    
     assert len(listofarrays) == 2, f" list must contain 2 samples. Currently{len(listofarrays)}"
     try:
         chisq, chipvalue = chisquare(*listofarrays)
@@ -146,6 +202,14 @@ def ttest(listofarrays):
 
 
 def stackbyabstractionlevel(stackdata, abstraction, fixeddims=6):
+    """
+    Get stack data averaged along abstraction level
+        stackdata: stack data
+        abstraction: abstraction level
+        fixeddims: fixed value
+    Returns:
+        stackdata
+    """
     dims = stackdata.ndim
     axes = (0, 1, 2, 3, 4, 5, 6)[:dims]  # to account for cell vs organelle dimensions
     if abstraction:
@@ -158,9 +222,13 @@ def stackbyabstractionlevel(stackdata, abstraction, fixeddims=6):
 def removestackoutliers(stackdata: np.ndarray, abstraction: int = 0, m: float = 2):
     """
     expected dimensions of stackdata: ((usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells, maxorganellepercell))
-    :param stackdata:
-    :param m:
-    :return:
+
+    Args:
+        stackdata: stackdata
+        m: number of standard deviations to keep
+
+    Returns:
+        stackdata with removed outliers
     """
 
     stackdata = stackbyabstractionlevel(stackdata, abstraction)
@@ -191,8 +259,4 @@ if __name__ == "__main__":
     condition = np.abs(selectedarray - mean) < 1 * stdev
     newarray = selectedarray.copy()
     newarray[~condition] = np.nan
-    # # print(condition.shape, mean, stdev, np.min(selectedarray), np.max(selectedarray))
-    # # print(False in condition)
-    # print(selectedarray[condition].shape, selectedarray[~condition].shape)
-    # # print((selectedarray).shape, newarray.shape, selectedarray == newarray)
-    # print(newarray)
+

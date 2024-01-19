@@ -23,9 +23,12 @@ def get_edge_connectivity(slices: slice, max_z: int):
     Returns tags indicating connectivity of 3d object to top or bottom or both. Such data should be
     excluded from calculations due to the possibility of it being cut off.
 
-    :param slices: slice object
-    :param max_z: max z based on z dimension of original stack
-    :return: tags indicating connectivity of 3d object to top or bottom or both.
+    Args:
+        slices: slice object
+        max_z: max z based on z dimension of original stack
+
+    Returns:
+        tags indicating connectivity of 3d object to top or bottom or both.
     """
     connectedbot = False
     connectedtop = False
@@ -54,8 +57,11 @@ def orientation_3d(bboximage):
     Calculates 3D orientation based on PCA with 3 components. Note that this orientation does not
     measure actual feret length, but is based on the distribution of data.
 
-    :param bboximage: stack dimensions are in order z,x,y
-    :return:
+    Args:
+        bboximage: stack dimensions are in order z,x,y
+
+    Returns:
+        r, theta, phi values
     """
     # find all filled points
     Xpoints = np.array(np.where(bboximage > 0)).T
@@ -82,11 +88,14 @@ def calculate_object_properties(bboxdata, usephull=False, debug=False, small_org
     area reduces calculation time required. Calculations are done for spans along X, Y and Z axes.
     Maximum and minimum feret lengths, centroid coordinates and volume.
 
-    :param bboxdata: 3D data in region of interest (bounding box)
-    :param usephull: Use pseudo hull for rotation based calculations instead of the entire object
-    :param debug: use when debugging
-    :param small_organelle: is channel gfp?
-    :return:centroid, volume, xspan, yspan, zspan, maxferet, minferet measurements
+    Args:
+        bboxdata: 3D data in region of interest (bounding box)
+        usephull: Use pseudo hull for rotation based calculations instead of the entire object
+        debug: use when debugging
+        small_organelle: is channel gfp?
+
+    Returns:
+        centroid, volume, xspan, yspan, zspan, maxferet, minferet measurements
     """
     bboxdatabw = (bboxdata > 0)
     miparea = np.nan
@@ -135,9 +144,12 @@ def dilate_bbox_uniform(ip_bbox, m=0):
     """
     'dilates'/pads given ndimensional matrix with given value
 
-    :param ip_bbox:
-    :param m:
-    :return:
+    Args:
+        ip_bbox: input bounding box
+        m: size of padding along all directions
+
+    Returns:
+        uniformly padded bounding box
     """
     assert isinstance(m, int), "number of dilations must be an integer"
     # dilate_boundary
@@ -150,9 +162,13 @@ def dilate_boundary_zxy(bbox, m=0, dilatexyonly=True):
     """
     performs 'binary' dilation on integer matrix.
 
-    :param bbox:
-    :param m:
-    :return:
+    Args:
+        bbox: Dilate boundary along zxy
+        m: number of dilations
+        dilatexyonly: only dilate along x and y directions.
+
+    Returns:
+        dilated bounding box
     """
     assert isinstance(m, int), "number of dilations must be an integer"
     # print("before", bbox.shape, np.unique(bbox), np.count_nonzero(bbox), m)
@@ -175,12 +191,18 @@ def dilate_boundary_zxy(bbox, m=0, dilatexyonly=True):
 
 def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
     """
-    pads a 3d slice taking into account the limits of the original stack. This roundabout method is required to avoid passing the entire stack as argument which slows calculations down.
+    pads a 3d slice taking into account the limits of the original stack.
+    This roundabout method is required to avoid passing the entire stack
+    as argument which slows calculations down. Takes into account stack
+    borders where such padding is not possible.
 
-    :param ip_slice_obj:
-    :param pad_length:
-    :param stackshape: 
-    :return:
+    Args:
+        ip_slice_obj: input slice object
+        pad_length: length of padding
+        stackshape: np.shape of stack
+
+    Returns:
+        modified_slice_obj, actual diffs in slice , ideal shifted slice
     """
     modified_slice_obj = []
     slicediffs = []
@@ -205,9 +227,13 @@ def pad_3d_slice(ip_slice_obj, pad_length, stackshape):
 def phantom_pad(bbox, slicediff):
     """
     Pads the box with given pad dimensions
-    :param bbox:
-    :param slicediff:
-    :return:
+
+    Args:
+        bbox: bounding box
+        slicediff: actual diffs in slice - caused by stack borders. This object can be obtained from pad_3d_slice
+
+    Returns:
+        pads bounding box by given slicediff
     """
     assert bbox.ndim == len(slicediff), f"dimensions for bbox and slicediff must match, " \
                                         f"currently bbox:{bbox.ndim}, slicediff:{len(slicediff)}"
@@ -220,9 +246,13 @@ def z_dist_top_bottom_extrema(org_bbox, cell_bbox):
     Takes the minimum coordinate in cell and subtracts from all organelle values - this provides the distance
     from bottom of the cell. Returns a mean and standard deviation.
 
-    :param org_bbox:
-    :param cell_bbox:
-    :return:
+    Args:
+        org_bbox: organelle bounding box
+        cell_bbox: cell bounding box
+
+    Returns:
+        z_dists_bot_mean, z_dists_bot_std, z_dists_top_mean, z_dists_top_std
+        - z distance from bot and top and their standard deviations
     """
     cell_voxels = np.transpose(np.nonzero(cell_bbox))
     lowest_z_coord = cell_voxels[:, 0].min()
@@ -244,9 +274,12 @@ def z_dist_top_bottom_surface(org_bbox, cell_bbox):
     Takes the minimum coordinate in cell and subtracts from all organelle values - this provides the distance
     from bottom of the cell. Returns a mean and standard deviation.
 
-    :param org_bbox:
-    :param cell_bbox:
-    :return:
+    Args:
+        org_bbox: organelle bounding box
+        cell_bbox: cell bounding box
+    Returns:
+        z_dists_bot_surface_mean, z_dists_bot_surface_std, z_dists_top_surface_mean, z_dists_top_surface_std
+        - z distance from bottom and top surfaces and their standard deviations
     """
     cellshape = cell_bbox.shape
 
@@ -277,29 +310,6 @@ def z_dist_top_bottom_surface(org_bbox, cell_bbox):
     z_dists_bot_surface_std = z_distances_bot.std()
     z_dists_top_surface_mean = z_distances_top.mean()
     z_dists_top_surface_std = z_distances_top.std()
-    # print( f"zbotms: {z_dists_bot_surface_mean}, {z_dists_bot_surface_std}, "
-    #        f"ztopms: {z_dists_top_surface_mean}, {z_dists_top_surface_std}")
-    # if np.isnan(z_dists_top_surface_std):
-    #     z_dists_top_surface_std = np.nan
-    # if np.isnan(z_dists_bot_surface_std):
-    #     z_dists_bot_surface_std = np.nan
-    # if np.isnan(z_dists_bot_surface_mean):
-    #     z_dists_bot_surface_mean = np.nan
-    # if np.isnan(z_dists_top_surface_mean):
-    #     z_dists_top_surface_mean = np.nan
-    # print(f"nzbotms: {z_dists_bot_surface_mean}, {z_dists_bot_surface_std}, "
-    #       f"nztopms: {z_dists_top_surface_mean}, {z_dists_top_surface_std}")
-
-    # try:
-    #     print(f"{z_distances_bot.nanmin()},{z_distances_bot.nanmax()},{z_distances_top.nanmin()},{z_distances_top.nanmax()}")
-    #     print(f"{z_dists_bot_surface_mean},{z_dists_bot_surface_std},{z_dists_top_surface_mean},{z_dists_top_surface_std}")
-    # except Exception as e:
-    #     pass
-    # print(f"{z_distances_top.min()}, {z_distances_bot.min()}")
-    # print(f"{z_distances_top.max()}, {z_distances_bot.max()}")
-    # print(f"Zcoords shapes:  {z_distances_top.shape},{z_distances_bot.shape}")
-    # exit()
-
     return z_dists_bot_surface_mean, z_dists_bot_surface_std, z_dists_top_surface_mean, z_dists_top_surface_std
 
 
@@ -307,13 +317,17 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
     """
     calculates the mean and standard deviation of distance of each pixel from the wall for each frame layer-by-layer
     Data must be in the form : Z, X, Y -> axis 0 is assumed to be z.
-    :param org_bbox: bounding box with segmented organelle, pre-dilated if m_dilations !=0
-    :param cell_bbox: bounding box with corresponding segmented cell, undilated
-    :param returnmap : returns euclidean distance transform map
-    :param axis : axis along which all frames are considered.
-    :param usescale : scales euclidean distance map based on resolution
-    :param scales :
-    :return: mean and std of distance of each pixel from cell border
+
+    Args:
+        org_bbox: bounding box with segmented organelle, pre-dilated if m_dilations !=0
+        cell_bbox: bounding box with corresponding segmented cell, undilated
+        returnmap : returns Euclidean distance transform map
+        axis : axis along which all frames are considered.
+        usescale : scales Euclidean distance map based on resolution
+        scales : scaling factors
+
+    Returns:
+        mean and std of distance of each pixel from cell border
     """
 
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
@@ -356,19 +370,10 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
             ed_map_out = distance_transform_edt(cell2d_inv, sampling=scales)
         # Combine edt and inverse edt. An entire voxel is labelled 0
         ed_map = ed_map_in - ed_map_out
-        # print("MIN edmapin: ", np.min(ed_map_in), "edmap: ", np.min(ed_map), "edmapout: ", np.min(ed_map_out), end="\t")
-        # print("MAX edmapin: ", np.max(ed_map_in), "edmap: ", np.max(ed_map), "edmapout: ", np.max(ed_map_out), end="\t")
-        # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
-        #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
-        #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
-        # print(f"minscale: {minscale}")
-        # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
-        #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
-        #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
+
         mask2d = org2d > 0
         org_map = ed_map * mask2d
         org_map_n[z, :, :] = org_map
-    # print(f"MASK2d:MINorgmap: {np.min(org_map_n)}, MAXorgmap: {np.max(org_map_n)}")
     # average and sd
 
     # OmeTiffWriter.save(data=org_map_n, uri=f"{temppath}_orgmapn2d.tiff", overwrite_file=True)
@@ -383,13 +388,16 @@ def distance_from_wall_2d(org_bbox, cell_bbox, returnmap=False, axis=0, usescale
 def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, scales=None, temppath=""):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall in 3D
-    :param org_bbox : bounding box with segmented organelle
-    :param cell_bbox : bounding box with corresponding segmented cell
-    :param returnmap : returns euclidean distance transform map
-    :param usescale :
-    :param scales :
 
-    :return: mean and std of distance of each pixel from cell border
+    Args:
+        org_bbox : bounding box with segmented organelle
+        cell_bbox : bounding box with corresponding segmented cell
+        returnmap : returns euclidean distance transform map
+        usescale : use scaling factor
+        scales : scaling factor
+
+    Returns:
+        mean and std of distance of each pixel from cell border
     """
     assert org_bbox.shape == cell_bbox.shape, "bounding boxes of organelle and enclosing cell must be equal"
 
@@ -405,25 +413,13 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
 
     cell_bbox = (cell_bbox > 0) * 1
     cell_bbox_inv = (cell_bbox == 0) * 1
-    # print(f"DEBUG: cell:{np.shape(cell_bbox)}, {np.count_nonzero(cell_bbox)}, "
-    #       f"cellinv:{np.shape(cell_bbox_inv)},{np.count_nonzero(cell_bbox_inv)}, "
-    #       f"SUM: {np.count_nonzero(cell_bbox) + np.count_nonzero(cell_bbox_inv)}")
     # distance map for cell
     ed_map_in = distance_transform_edt(cell_bbox, sampling=scales)
     ed_map_out = distance_transform_edt(cell_bbox_inv, sampling=scales)
     # Combine edt and inverse edt
     ed_map = ed_map_in - ed_map_out
-    # print("MIN edmapin: ", np.min(ed_map_in), "edmap: ", np.min(ed_map), "edmapout: ", np.min(ed_map_out))
-    # print("MAX edmapin: ", np.max(ed_map_in), "edmap: ", np.max(ed_map), "edmapout: ", np.max(ed_map_out))
-    # print(f"DEBUG: edin:{np.shape(ed_map_in), np.count_nonzero(ed_map_in)},"
-    #       f"\tedout:{np.shape(ed_map_out), np.count_nonzero(ed_map_out)}"
-    #       f"\ted_map: {np.shape(ed_map), np.count_nonzero(ed_map)}")
-    # distance map for organelle locations
     mask = org_bbox > 0
     org_map = ed_map * mask
-    # print(f"MASK3d, MINorgmap: {np.min(org_map)}, MAXorgmap: {np.max(org_map)}")
-    # average and sd
-    # OmeTiffWriter.save(data=org_map, uri=f"{temppath}_orgmap3d.tiff", overwrite_file=True)
 
     org_map_nonzero = org_map[np.nonzero(org_bbox)]
     m = np.mean(org_map_nonzero)  # * minscale
@@ -436,9 +432,12 @@ def distance_from_wall_3d(org_bbox, cell_bbox, returnmap=False, usescale=True, s
 def distance_from_centroid_2d(org_bbox, cell_centroid):
     """
     calculates the mean and standard deviation of distance of each pixel from the wall
-    :param org_bbox: bounding box with segmented organelle
-    :param cell_bbox: bounding box with corresponding segmented cell
-    :return: mean and std of distance of each pixel from cell border
+
+    Args:
+        org_bbox: bounding box with segmented organelle
+        cell_bbox: bounding box with corresponding segmented cell
+    Returns:
+        mean and std of distance of each pixel from cell border
     """
     org_points = np.asarray(np.where(org_bbox > 0)).T  # coordinates of all relevant points
     dists = np.sum(np.square(org_points - cell_centroid))  # euclidean distance for all points
@@ -447,6 +446,16 @@ def distance_from_centroid_2d(org_bbox, cell_centroid):
 
 
 def getsphericity(bboxdata, volume):
+    """
+    Returns sphericity of segmented region in bounding box by converting to mesh first.
+
+    Args:
+        bboxdata: segmented region
+        volume: volume of segmented region
+    Returns:
+        Sphericity value
+    """
+
     bboxdata = bboxdata.squeeze()
     # assert bboxdata.ndim == 3, f"sphericity inputs must be 3 dimensional, currently: {bboxdata.ndim} dimensional"
     assert bboxdata.ndim == 3
@@ -458,9 +467,13 @@ def getsphericity(bboxdata, volume):
 
 def organellecentroid_samerefframe(bboxdata):
     """
+    Calculate centroid using saved axis scales on segmented object in bounding box
 
-    :param bboxdata: bounding box with binary segmentation
-    :return: centroid coordinates scaled
+    Args:
+        bboxdata: bounding box with binary segmentation
+
+    Returns:
+        centroid coordinates scaled
     """
     bboxdatabw = (bboxdata > 0)
     centroid = np.multiply(np.asarray(center_of_mass(bboxdatabw)), np.array([ZSCALE, XSCALE, YSCALE]))
@@ -472,26 +485,26 @@ def calculate_multiorganelle_properties(org_bboxdata, ref_centroid):
     Note: Dimension must be in the order: z,x,y
     feature measurements for individual organelles (within a masked cell)
 
-    :param org_bboxdata: 3D data in padded region of interest
-    :param ref_centroid: location of cell or dna centroid
+    Args:
+        org_bboxdata: 3D data in padded region of interest
+        ref_centroid: location of cell or dna centroid
 
-    :return:
-    Returns the following metrics
-    :param organellecounts: Count of organelles within boundingbox
-    :param centroids: center of mass (with all voxels weighted equally) giving the geometric centroid.
-    :param volumes: volume of all organelles within cell bounding box.
-    :param xspans: X-spans of all organelles within cell bounding box.
-    :param yspans: Y-spans of all organelles within cell bounding box.
-    :param zspans: Z-spans of all organelles within cell bounding box.
-    :param maxferets: maximum feret of all organelles within cell bounding box.
-    :param meanferets: mean ferets of all organelles within cell bounding box.
-    :param minferets: minimum ferets of all organelles within cell bounding box.
-    :param mipareas: Maximum intensity projection of all organelles within cell bounding box.
-    :param orientations3D: (r,theta,phi) values for all organelles within cell bounding box.
-    :param z_distributions: Z-distribution from the cell centroid of all organelles within cell bounding box.
-    :param radial_distribution2ds: 2D radial distribution from cell centroid of all organelles within cell bounding box.
-    :param radial_distribution3ds: 3D radial distribution from cell centroid of all organelles within cell bounding box.
-    :param meanvolume: mean volume per cell bounding box.
+    Returns:
+        organellecount: Count of organelles within boundingbox.
+        centroids: center of mass (with all voxels weighted equally) giving the geometric centroid.
+        volumes: volume of all organelles within cell bounding box.
+        xspans: X-spans of all organelles within cell bounding box.
+        yspans: Y-spans of all organelles within cell bounding box.
+        zspans: Z-spans of all organelles within cell bounding box.
+        maxferets: maximum feret of all organelles within cell bounding box.
+        meanferets: mean ferets of all organelles within cell bounding box.
+        minferets: minimum ferets of all organelles within cell bounding box.
+        mipareas: Maximum intensity projection of all organelles within cell bounding box.
+        orientations3D: (r,theta,phi) values for all organelles within cell bounding box.
+        z_distributions: Z-distribution from the cell centroid of all organelles within cell bounding box.
+        radial_distribution2ds: 2D radial distribution from cell centroid of all organelles within cell bounding box.
+        radial_distribution3ds: 3D radial distribution from cell centroid of all organelles within cell bounding box.
+        meanvolume: mean volume per cell bounding box.
 
 
     """

@@ -8,4 +8,3 @@ SegmentationLike = Union[str, bool]
 Stacklike = np.ndarray
 ArrayLike = Union[list, tuple, np.ndarray]  # , set]
 strList = List[str]
-# TODO: nestedlistlike ?

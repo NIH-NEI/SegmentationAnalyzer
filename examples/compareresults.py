@@ -2,10 +2,10 @@ import os
 from src.stackio import stackio
 import numpy as np
 
-pathd = "C:/Users/satheps/PycharmProjects/Results/2022/May20/LC3B_Comparison/calcs/"
-pathb = "C:/Users/satheps/PycharmProjects/Results/2022/May20/LC3B_Comparison/calcs_biowulf/"
-pathb_nomp = "C:/Users/satheps/PycharmProjects/Results/2022/May27/LC3B_Comparison/calcs_nomp/"
-pathbe = "C:/Users/satheps/PycharmProjects/Results/2022/May27/LC3B_Comparison/calcs_hram/"
+pathd = "..data/../LC3B_Comparison/calcs/"
+pathb = "..data/../LC3B_Comparison/calcs_biowulf/"
+pathb_nomp = "..data/../LC3B_Comparison/calcs_nomp/"
+pathbe = "..data/../LC3B_Comparison/calcs_hram/"
 
 fbiowulf = [f for f in os.listdir(pathb) if f.__contains__("npz")]
 fdesktop = [f for f in os.listdir(pathd) if f.__contains__("npz")]
