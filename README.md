@@ -14,7 +14,7 @@ cells by ID for visualization or other purposes.
 1. Install:
 
 ```
-git clone [https://github.com/RPEGoogleMap/SegmentationAnalyzer](https://github.com/NIH-NEI/SegmentationAnalyzer)
+git clone https://github.com/NIH-NEI/SegmentationAnalyzer
 ```
 
 2. To run calculations for segmented stacks, run GenerateShapeMetricsBatch.py as follows:
