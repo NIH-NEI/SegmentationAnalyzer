@@ -1,4 +1,5 @@
 import math
+import os
 
 import cv2
 import numpy as np
@@ -9,7 +10,7 @@ from skimage import draw
 class SyntheticCell():
     def __init__(self):
         # generates a synthesized cell with 3 channels
-        # - polygonal outside, elliptical inside and a distribution of a few particles
+        # - polygonal outside, elliptical organelle inside and a distribution of a few particles
 
         pass
 
@@ -176,10 +177,11 @@ if __name__ == "__main__":
     # SyntheticCell.standard_synthetic_cell(savepath)
     from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
 
-    printall = False
+    printall = True
     savell = True
     savepath = "../../data/temp/"
-
+    # if not os.path.exists(savepath):
+    os.makedirs(savepath, exist_ok=True)
     cell = SyntheticCell.generate_synthetic_cell()
     print(cell.shape)
     cellobj = cell[:, 0, :, :, :].squeeze()
@@ -222,4 +224,4 @@ if __name__ == "__main__":
         print("radial_distribution2ds", radial_distribution2ds)
         print("radial_distribution3ds", radial_distribution3ds)
         print("meanvolume", meanvolume / ep.VOLUMESCALE)
-        OmeTiffWriter.save(data=cellobj, uri=savepath + "cuboid.tiff", overwrite_file=True)
+        # OmeTiffWriter.save(data=cellobj, uri=savepath + "cuboid.tiff", overwrite_file=True)

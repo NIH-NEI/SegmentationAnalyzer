@@ -558,6 +558,5 @@ if __name__ == "__main__":
 
     args = sys.argv
     print(f"args:{args})")
-    # exit()
     # Example usage python <path-to-repo>/GenerateShapeMetricsBatch.py --
     calculateCellMetrics()
