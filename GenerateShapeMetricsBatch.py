@@ -9,11 +9,11 @@ import numpy as np
 import pandas as pd
 from scipy.ndimage import find_objects  # ,label
 
-# from src.stackio import metadataHandler as meta
-from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
-from src.AnalysisTools.dtypes import PathLike
-from src.Visualization import plotter, cellstack
-from src.stackio import stackio
+# from analysis.stackio import metadataHandler as meta
+from analysis.AnalysisTools import experimentalparams, datautils, ShapeMetrics
+from analysis.AnalysisTools.dtypes import PathLike
+from analysis.Visualization import plotter, cellstack
+from analysis.stackio import stackio
 
 
 @click.command(options_metavar="<options>")
@@ -41,7 +41,14 @@ from src.stackio import stackio
 # @click.option("--help", help="Show details for function ")
 def calculateCellMetrics(gfpfolder: PathLike, cellfolder: PathLike, savepath: PathLike, channel: str,
                          usesampledataonly: bool, test: bool, dontsave: bool, generateplots: bool, debug: bool,
-                         usednareference: bool, selected_dilation: int = None, num_processes: int = 4):
+                         usednareference: bool, selected_dilation: int = 2, num_processes: int = 4):
+    calculateCellMetricsAPI(gfpfolder, cellfolder, savepath, channel,
+        usesampledataonly, test, dontsave, generateplots, debug, usednareference,
+        selected_dilation=selected_dilation, num_processes=num_processes)
+#
+def calculateCellMetricsAPI(gfpfolder: PathLike, cellfolder: PathLike, savepath: PathLike, channel: str,
+                         usesampledataonly: bool, test: bool, dontsave: bool, generateplots: bool, debug: bool,
+                         usednareference: bool, selected_dilation: int = 2, num_processes: int = 4):
     """
     Read all segmented image files. Measure shape metrics based on corresponding co-registered channels and save data for each metric.
 

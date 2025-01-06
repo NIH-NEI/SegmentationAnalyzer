@@ -1,13 +1,13 @@
 import sys
 
-sys.path.extend('../../../SegmentationAnalyzer')
+#sys.path.extend('../../../SegmentationAnalyzer')
 
 import click
 import numpy as np
 from aicsimageio.writers import OmeTiffWriter
 from scipy.ndimage import binary_dilation
 from skimage.morphology import octahedron
-from src.AnalysisTools.dtypes import PathLike
+from analysis.AnalysisTools.dtypes import PathLike
 
 
 def mergestack(CellObject, DNAObjects, GFPObjects, savename, save=True, add_3d_cell_outline=False, debug=False):
@@ -68,7 +68,7 @@ def merge_entire_stack(Cellstackpath, DNAstackpath, GFPstackpath, savename="", d
     Returns:
         Boolean success if successfully merged and saved
     """
-    from src.stackio import stackio
+    from analysis.stackio import stackio
     success = False
     try:
         img_GFP = stackio.opensegmentedstack(GFPstackpath)
@@ -136,7 +136,7 @@ def mergeallstacks(segmentpath: PathLike, savepathdir: PathLike, ndilations: int
     # [cell, dna, gfp] = [np.random.random((20, 500, 500)) >= 0.4 for _ in range(3)]
     # mergestack(cell, dna, gfp, savename="test")
 
-    from src.AnalysisTools import datautils, experimentalparams as ep
+    from analysis.AnalysisTools import datautils, experimentalparams as ep
     from os.path import join
     import os
 

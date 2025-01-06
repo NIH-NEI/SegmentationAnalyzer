@@ -1,5 +1,5 @@
 import os
-from src.stackio import stackio
+from analysis.stackio import stackio
 import numpy as np
 
 pathd = "..data/../LC3B_Comparison/calcs/"

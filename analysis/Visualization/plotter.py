@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from src.AnalysisTools import datautils, experimentalparams
-from src.AnalysisTools import statcalcs
+from analysis.AnalysisTools import datautils, experimentalparams
+from analysis.AnalysisTools import statcalcs
 
 # from scipy.stats import f_oneway,ks_2samp
 plt.rcParams["figure.figsize"] = [12, 9]
@@ -276,7 +276,7 @@ def violinstripplot(stackdata, channel="Cell", propname="", units="", percentile
             fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(18, 8))  # , sharey=True)
             # inner = box for single boxplot
             vp = sns.violinplot(ax=axs, x="Week", y=propname, hue="Treatment", cut=0, data=data[m], inner=None,
-                                gridsize=gridsize, palette="turbo", split=True, scale=scaletype,
+                                gridsize=gridsize, palette="turbo", split=True, density_norm=scaletype, #scale=scaletype,
                                 zorder=0, width=violinwidths[m])
             if withstrpplt:
                 sns.stripplot(ax=axs, x="Week", y=propname, hue="Treatment", jitter=0.2, alpha=alpha, data=data[m],

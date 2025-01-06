@@ -38,7 +38,7 @@ ram and a few hundred Gb of free space to accommodate the data.
 4. Create Conda Virtual Environment (do this once on the first run):
 
    ```
-   conda create --name SegmentationAnalyzer --file requirements.txt
+   conda env create --file conda-environment.yml
    ```
 
 5. Activate the Virtual Environment:
@@ -52,7 +52,7 @@ ram and a few hundred Gb of free space to accommodate the data.
 For a quick demonstration of a single calculation, you can run
 
 ```
-python src/AnalysisTools/SyntheticData.py
+python analysis/AnalysisTools/SyntheticData.py
 ```
 
 This will generate a single synthetic polygonal prism cell, and an elliptical organelle in a separate channel. Then
@@ -113,4 +113,5 @@ python loadandplot.py --help
 ## Contributors
 
 * *Pushkar Sathe*
-* *Nicholas Schaub* (pseudo-hull based feret calculation) 
+* *Nicholas Schaub* (pseudo-hull based feret calculation)
+* *Andrei Volkov* (version compatibility, API access from external Python projects)

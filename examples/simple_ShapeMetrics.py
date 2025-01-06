@@ -3,14 +3,14 @@ import re
 import numpy as np
 import pandas as pd
 import warnings
-from src.stackio import stackio
+from analysis.stackio import stackio
 from scipy.ndimage.measurements import label, find_objects, center_of_mass
 from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
 from aicsimageio.writers import OmeTiffWriter
 from aicsimageio import AICSImage
-from src.AnalysisTools import conv_hull
-from src.AnalysisTools import experimentalparams as ep
+from analysis.AnalysisTools import conv_hull
+from analysis.AnalysisTools import experimentalparams as ep
 
 XSCALE_822, YSCALE_822, ZSCALE_822 = 0.0705908, 0.0705908, 0.2300000
 VOLUMESCALE_822 = XSCALE_822 * YSCALE_822 * ZSCALE_822

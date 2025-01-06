@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # savepath = "..data/../syntheticcell/synth.tif"
     #
     # SyntheticCell.standard_synthetic_cell(savepath)
-    from src.AnalysisTools import experimentalparams as ep, ShapeMetrics
+    from analysis.AnalysisTools import experimentalparams as ep, ShapeMetrics
 
     printall = True
     savell = True

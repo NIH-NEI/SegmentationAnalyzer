@@ -1,5 +1,5 @@
 import json
-from src.AnalysisTools import experimentalparams as ep
+from analysis.AnalysisTools import experimentalparams as ep
 
 
 # def createstackjson(path, ):

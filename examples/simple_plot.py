@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import re
 import matplotlib.pyplot as plt
-from src.stackio import stackio
+from analysis.stackio import stackio
 import seaborn as sns
-from src.AnalysisTools import statcalcs, datautils
+from analysis.AnalysisTools import statcalcs, datautils
 
 savepath_tmm20 = "" # add path here
 flist_plt = [f for f in os.listdir(savepath_tmm20) if f.__contains__('.npz')]

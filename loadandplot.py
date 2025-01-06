@@ -4,13 +4,13 @@ from concurrent.futures import ProcessPoolExecutor
 # import warnings
 # import argparse
 from os.path import isfile, join
-from src.AnalysisTools import statcalcs
+from analysis.AnalysisTools import statcalcs
 
 import click
 import numpy as np
-from src.AnalysisTools import experimentalparams as ep
-from src.Visualization import plotter
-from src.stackio import stackio
+from analysis.AnalysisTools import experimentalparams as ep
+from analysis.Visualization import plotter
+from analysis.stackio import stackio
 
 
 def plotRPEproperties(stackdata, savefolder, organelletype, propertyname, percentile, logplot, vplot=True, pplot=False):
@@ -86,6 +86,9 @@ def loadandplot(calcfolder, savefolder, percentile):
     Returns:
         None
     """
+    savefolder = savefolder.replace('\\', '/')
+    if not savefolder.endswith('/'):
+        savefolder = savefolder+'/'
     print(calcfolder, savefolder, percentile)
     files = os.listdir(calcfolder)
     datafiles = [f for f in files if isfile(join(calcfolder, f)) if f.__contains__('.npz')]
@@ -98,7 +101,7 @@ def loadandplot(calcfolder, savefolder, percentile):
     # for datafile in reversed(datafiles):
     try:
         for datafile in datafiles:
-            GFPchannel, organelletype, propertyname, _ = datafile[:-4].split("_")
+            GFPchannel, organelletype, propertyname = datafile[:-4].split("_")
             # final value number is for percentile. This may need to be removed depending on the way files are named.
             stackdata = stackio.loadproperty(join(calcfolder, datafile))
 

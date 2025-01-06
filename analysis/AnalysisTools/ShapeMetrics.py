@@ -10,8 +10,8 @@ from skimage.measure import marching_cubes, mesh_surface_area
 from sklearn.decomposition import PCA
 from aicsimageio.writers import OmeTiffWriter
 
-from src.AnalysisTools import conv_hull
-from src.AnalysisTools import experimentalparams as ep
+from analysis.AnalysisTools import conv_hull
+from analysis.AnalysisTools import experimentalparams as ep
 
 XSCALE, YSCALE, ZSCALE = ep.XSCALE, ep.YSCALE, ep.ZSCALE
 VOLUMESCALE = ep.VOLUMESCALE

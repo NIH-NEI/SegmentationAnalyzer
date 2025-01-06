@@ -8,9 +8,9 @@ from aicsimageio import AICSImage
 from skimage.measure import label as skilbl
 # from aicsimageio.writers import OmeTiffWriter
 from tifffile import imread
-from src.AnalysisTools import datautils
-from src.AnalysisTools.dtypes import *
-from src.stackio import labelledcsvhandler
+from analysis.AnalysisTools import datautils
+from analysis.AnalysisTools.dtypes import *
+from analysis.stackio import labelledcsvhandler
 
 
 def opensegmentedstack(name: PathLike, whiteonblack: SegmentationLike = "default", debug: bool = False):
@@ -168,7 +168,7 @@ def convertfromnpz(npzpath, targetdir=None, totype="csv", save=True):
     :param save: save a file
     :return:
     """
-    from src.AnalysisTools import experimentalparams as ep
+    from analysis.AnalysisTools import experimentalparams as ep
     import os
     # dims = (usedtreatments, usedweeks, usedchannels, usedwells, totalFs, maxnocells) # depends on organelle
 

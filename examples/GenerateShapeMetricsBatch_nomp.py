@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 from os.path import join, exists, isdir
 from scipy.ndimage import find_objects  # ,label
-from src.AnalysisTools import experimentalparams, datautils, ShapeMetrics
-from src.AnalysisTools.dtypes import PathLike
-from src.Visualization import plotter, cellstack
-from src.stackio import stackio
+from analysis.AnalysisTools import experimentalparams, datautils, ShapeMetrics
+from analysis.AnalysisTools.dtypes import PathLike
+from analysis.Visualization import plotter, cellstack
+from analysis.stackio import stackio
 
 
 @click.command(options_metavar="<options>")

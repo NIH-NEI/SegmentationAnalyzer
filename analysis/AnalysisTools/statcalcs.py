@@ -3,8 +3,8 @@ import logging
 import numpy as np
 from scipy.stats import norm, f_oneway, ks_2samp, chisquare, ttest_ind
 
-from src.AnalysisTools import experimentalparams as ep
-from src.AnalysisTools.datautils import create3dlist
+from analysis.AnalysisTools import experimentalparams as ep
+from analysis.AnalysisTools.datautils import create3dlist
 
 USEDTREATMENTS = ep.USEDTREATMENTS
 USEDWEEKS = ep.USEDWEEKS
